@@ -1,0 +1,48 @@
+{
+   "name": "test",
+   "version": "1.0.0",
+   "description": "",
+   "main": "index.js",
+   "scripts": {
+      "build": "cross-env NODE_ENV='development' webpack",
+      "serve": "cross-env NODE_ENV='serve' webpack serve",
+      "build_prod": "cross-env NODE_ENV='production' webpack"
+   },
+   "author": "",
+   "license": "ISC",
+   "devDependencies": {
+      "@pmmmwh/react-refresh-webpack-plugin": "^0.5.10",
+      "@types/react": "^18.0.30",
+      "@types/react-dom": "^18.0.11",
+      "cross-env": "^7.0.3",
+      "css-loader": "^6.7.3",
+      "css-minimizer-webpack-plugin": "^5.0.0",
+      "eslint": "^8.36.0",
+      "eslint-config-prettier": "^8.8.0",
+      "eslint-config-standard-with-typescript": "^34.0.1",
+      "eslint-plugin-import": "^2.27.5",
+      "eslint-plugin-n": "^15.6.1",
+      "eslint-plugin-prettier": "^4.2.1",
+      "eslint-plugin-promise": "^6.1.1",
+      "html-webpack-plugin": "^5.5.0",
+      "mini-css-extract-plugin": "^2.7.5",
+      "postcss": "^8.4.21",
+      "postcss-loader": "^7.1.0",
+      "postcss-preset-env": "^8.0.1",
+      "prettier": "^2.8.7",
+      "react-refresh": "^0.14.0",
+      "sass": "^1.60.0",
+      "sass-loader": "^13.2.1",
+      "terser-webpack-plugin": "^5.3.9",
+      "ts-loader": "^9.4.2",
+      "typescript": "^5.0.2",
+      "webpack": "^5.76.3",
+      "webpack-cli": "^5.0.1",
+      "webpack-dev-server": "^4.13.1"
+   },
+   "dependencies": {
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0",
+      "dotenv-webpack": "^8.0.1"
+   }
+}
