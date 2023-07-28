@@ -7,13 +7,28 @@
    "parserOptions": {
       "ecmaVersion": "latest",
       "sourceType": "module",
-      "project": "./tsconfig.json"
+      "project": ["./tsconfig.json"]
    },
    "rules": {
       "no-console": "warn",
       "indent": "off",
       "@typescript-eslint/indent": "off",
       "@typescript-eslint/comma-dangle": "off",
-      "@typescript-eslint/no-empty-interface": "off"
+      "@typescript-eslint/no-empty-interface": "off",
+      "no-empty-pattern": "off",
+      "@typescript-eslint/no-confusing-void-expression": "off",
+      "prettier/prettier": "off",
+      "@typescript-eslint/strict-boolean-expressions": "off",
+      "@typescript-eslint/no-misused-promises": [
+         "error",
+         {
+            "checksVoidReturn": false
+         }
+      ],
+      "@typescript-eslint/no-floating-promises": "off",
+      "no-prototype-builtins": "off",
+      "max-len": "off",
+      "@typescript-eslint/no-throw-literal": "off",
+      "@typescript-eslint/prefer-optional-chain": "off"
    }
 }

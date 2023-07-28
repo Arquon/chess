@@ -98,7 +98,7 @@ module.exports = {
             errors: true,
          },
       },
-      port: 8000,
+      port: 3000,
       historyApiFallback: true,
    },
    plugins,
