@@ -32,6 +32,14 @@ export default class Cell implements ICell {
       );
    }
 
+   static checkIfCellsOnTheSameDiagonal(firstPoint: ICellPosition, secondPoint: ICellPosition, cell: ICellPosition): boolean {
+      const k: number = (firstPoint.y - secondPoint.y) / (firstPoint.x - secondPoint.x);
+      if (Math.abs(k) !== 1) throw "points are not on one diagonal";
+      const b: number = firstPoint.y - k * firstPoint.x;
+      const test: number = k * cell.x + b;
+      return test === cell.y;
+   }
+
    static checkIfCellOnLineBetweenTwoPoints(firstPoint: ICellPosition, secondPoint: ICellPosition, cell: ICellPosition): boolean {
       if (firstPoint.x === secondPoint.x) return Cell.checkIfCellOnVerticalBetweenPoints(firstPoint, secondPoint, cell);
       if (firstPoint.y === secondPoint.y) return Cell.checkIfCellOnHorizontalBetweenPoints(firstPoint, secondPoint, cell);

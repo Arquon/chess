@@ -1,4 +1,4 @@
-import { type EColors } from "@/types/cell/ECellColors";
+import { EColors } from "@/types/cell/ECellColors";
 import Cell from "./cell";
 import { type ICellPosition } from "@/types/cell/TCellNumbers";
 import type Board from "./board";
@@ -11,6 +11,7 @@ import type Bishop from "../pieces/bishop";
 import type King from "../pieces/king";
 import type Knight from "../pieces/knight";
 import type Pawn from "../pieces/pawn";
+import { cellPositionToString } from "@/utils/functions";
 
 export type FigureConstructor = new (position: ICellPosition, color: EColors, board: Board) => Figure;
 export type TDirections = TLinearDirections | TDiagonalDirections;
@@ -93,14 +94,15 @@ export default abstract class Figure extends Cell implements IFigure {
          cellY += divY;
       }
 
-      cellY = this.position.y - divY;
+      const attackedFields = this.figureColor === EColors.white ? this.board.blackAttackedFields : this.board.whiteAttackedFields;
+      const attacksMoves = attackedFields.get(cellPositionToString(this.position));
 
-      while (cellY >= 0 && cellY <= 7) {
-         // check for figure attacked by linear figure
-         const possibleFigure = this.board.getCellByPosition({ x: this.position.x, y: cellY });
-         cellY += -divY;
-         if (!(possibleFigure instanceof Figure)) continue;
-         if (possibleFigure.isLinearFigure() && possibleFigure.figureColor !== this.figureColor) return direction;
+      if (!attacksMoves || !attacksMoves.length) return false;
+
+      for (const { figure } of attacksMoves) {
+         if (figure.position.x === this.position.x && figure.isLinearFigure()) {
+            return direction;
+         }
       }
 
       return false;
@@ -117,14 +119,13 @@ export default abstract class Figure extends Cell implements IFigure {
          cellX += divX;
       }
 
-      cellX = this.position.x - divX;
+      const attackedFields = this.figureColor === EColors.white ? this.board.blackAttackedFields : this.board.whiteAttackedFields;
+      const attacksMoves = attackedFields.get(cellPositionToString(this.position));
 
-      while (cellX >= 0 && cellX <= 7) {
-         // check for figure attacked by linear figure
-         const possibleFigure = this.board.getCellByPosition({ x: cellX, y: this.position.y });
-         cellX += -divX;
-         if (!(possibleFigure instanceof Figure)) continue;
-         if (possibleFigure.isLinearFigure() && possibleFigure.figureColor !== this.figureColor) {
+      if (!attacksMoves || !attacksMoves.length) return false;
+
+      for (const { figure } of attacksMoves) {
+         if (figure.isLinearFigure() && figure.position.y === this.position.y) {
             return direction;
          }
       }
@@ -165,16 +166,14 @@ export default abstract class Figure extends Cell implements IFigure {
          cellY += divY;
       }
 
-      cellX = this.position.x - divX;
-      cellY = this.position.y - divY;
+      const attackedFields = this.figureColor === EColors.white ? this.board.blackAttackedFields : this.board.whiteAttackedFields;
+      const attacksMoves = attackedFields.get(cellPositionToString(this.position));
 
-      while (cellX >= 0 && cellX <= 7 && cellY >= 0 && cellY <= 7) {
-         const possibleFigure = this.board.getCellByPosition({ x: cellX, y: cellY });
-         cellX += -divX;
-         cellY += -divY;
-         if (!(possibleFigure instanceof Figure)) continue;
-         if (possibleFigure.isDiagonalFigure() && possibleFigure.figureColor !== this.figureColor) return protectionDirection;
-         return false;
+      if (!attacksMoves || !attacksMoves.length) return false;
+
+      for (const { figure } of attacksMoves) {
+         if (figure.isDiagonalFigure() && Cell.checkIfCellsOnTheSameDiagonal(kingPosition, this.position, figure.position))
+            return protectionDirection;
       }
 
       return false;
