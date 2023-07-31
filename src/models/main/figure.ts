@@ -2,13 +2,15 @@ import { type EColors } from "@/types/cell/ECellColors";
 import Cell from "./cell";
 import { type ICellPosition } from "@/types/cell/TCellNumbers";
 import type Board from "./board";
-import { type IPossibleAction, type IMoveInfo } from "@/types/IMove";
+import { type IMoveInfo } from "@/types/IMove";
 import { type TDiagonalDirections } from "../pieces/utils/diagonalFigure";
 import { type TLinearDirections, type TVerticalDirections, type THorizontalDirections } from "../pieces/utils/linearFigure";
 import type Queen from "../pieces/queen";
 import type Rock from "../pieces/rock";
 import type Bishop from "../pieces/bishop";
 import type King from "../pieces/king";
+import type Knight from "../pieces/knight";
+import type Pawn from "../pieces/pawn";
 
 export type FigureConstructor = new (position: ICellPosition, color: EColors, board: Board) => Figure;
 export type TDirections = TLinearDirections | TDiagonalDirections;
@@ -33,13 +35,19 @@ export interface IFigure {
    isShieldForKing: () => TDirections | false;
 }
 
+interface ShieldMovesAndProtectionDirectionType {
+   shieldMoves: IMoveInfo[] | null;
+   protectionDirection: TDirections | false;
+}
+
 export default abstract class Figure extends Cell implements IFigure {
    isAlive: boolean;
    figureColor: EColors;
    board: Board;
    readonly figureName: EFigures | null = null;
 
-   protected allActions: IPossibleAction[] = [];
+   private _allActions: IMoveInfo[] = [];
+   private _possibleMoves: IMoveInfo[] = [];
 
    constructor(position: ICellPosition, color: EColors, board: Board) {
       super(position);
@@ -52,12 +60,24 @@ export default abstract class Figure extends Cell implements IFigure {
       return firstFigure.figureColor !== secondFigure.figureColor;
    }
 
+   protected get allActions(): IMoveInfo[] {
+      return this._allActions;
+   }
+
+   protected set allActions(value: IMoveInfo[]) {
+      this._allActions = value;
+   }
+
    get possibleMoves(): IMoveInfo[] {
-      return this.allActions.filter((possibleMove) => possibleMove.possible && possibleMove.info !== "attackWithoutMove");
+      return this._possibleMoves.filter((move) => move.info !== "attackWithoutMove");
+   }
+
+   protected set possibleMoves(value: IMoveInfo[]) {
+      this._possibleMoves = value;
    }
 
    get possibleAttacks(): IMoveInfo[] {
-      return this.allActions.filter(
+      return this._allActions.filter(
          (possibleAttack) => possibleAttack.info === undefined || possibleAttack.info === "capture" || possibleAttack.info === "attackWithoutMove"
       );
    }
@@ -188,21 +208,108 @@ export default abstract class Figure extends Cell implements IFigure {
       return false;
    }
 
+   protected getProtectionDirectionAndShieldMoves(): ShieldMovesAndProtectionDirectionType {
+      const attacksOnKing = this.board.getAttacksOnKing(this.figureColor);
+      const protectionDirection = this.isShieldForKing();
+
+      if (!!attacksOnKing && (attacksOnKing.length > 1 || (attacksOnKing.length === 1 && protectionDirection))) {
+         return {
+            shieldMoves: [],
+            protectionDirection,
+         };
+      }
+
+      if (attacksOnKing) {
+         const shieldMoves: IMoveInfo[] = this.findShieldedMoves(attacksOnKing[0]);
+         this.possibleMoves = shieldMoves;
+         return {
+            shieldMoves,
+            protectionDirection,
+         };
+      }
+
+      return {
+         shieldMoves: null,
+         protectionDirection,
+      };
+   }
+
+   private findShieldedMoves(attackMove: IMoveInfo): IMoveInfo[] {
+      const shieldedMoves: IMoveInfo[] = [];
+      const { position: kingPosition } = attackMove;
+      const { figure: attackFigure } = attackMove;
+      const { position: attackFigurePosition } = attackFigure;
+
+      if (this.position.x === 6 && this.position.y === 6) console.log({ actions: this.allActions });
+
+      if (attackFigure.isKnight() || attackFigure.isPawn()) {
+         for (const action of this.allActions) {
+            if (Cell.checkCellsHasSamePosition(action, attackMove)) {
+               shieldedMoves.push(action);
+               return shieldedMoves;
+            }
+         }
+      }
+
+      if (attackFigure.isBishop()) {
+         for (const action of this.allActions) {
+            if (Cell.checkIfCellOnDiagonalBetweenTwoPoints(kingPosition, attackFigurePosition, action.position)) {
+               shieldedMoves.push(action);
+            }
+         }
+      }
+
+      if (attackFigure.isRock()) {
+         for (const action of this.allActions) {
+            if (Cell.checkIfCellOnLineBetweenTwoPoints(kingPosition, attackFigurePosition, action.position)) {
+               shieldedMoves.push(action);
+            }
+         }
+      }
+
+      if (attackFigure.isQueen()) {
+         let checkFunc: ((firstPoint: ICellPosition, secondPoint: ICellPosition, cell: ICellPosition) => boolean) | null = null;
+         if (attackFigurePosition.x === kingPosition.x || attackFigurePosition.y === kingPosition.y)
+            checkFunc = Cell.checkIfCellOnLineBetweenTwoPoints;
+         if (Math.abs(attackFigurePosition.x - kingPosition.x) === Math.abs(attackFigurePosition.y - kingPosition.y))
+            checkFunc = Cell.checkIfCellOnDiagonalBetweenTwoPoints;
+         if (!checkFunc) throw "Queen attack error";
+
+         for (const action of this.allActions) {
+            if (checkFunc(kingPosition, attackFigurePosition, action.position)) {
+               shieldedMoves.push(action);
+            }
+         }
+      }
+
+      return shieldedMoves;
+   }
+
    abstract findAllActions(board?: Board): IMoveInfo[];
+
+   abstract findPossibleMoves(): IMoveInfo[];
 
    bindBoard(board: Board): void {
       this.board = board;
    }
 
-   private isBishop(): this is Bishop {
+   isPawn(): this is Pawn {
+      return this.figureName === EFigures.pawn;
+   }
+
+   isKnight(): this is Knight {
+      return this.figureName === EFigures.knight;
+   }
+
+   isBishop(): this is Bishop {
       return this.figureName === EFigures.bishop;
    }
 
-   private isRock(): this is Rock {
+   isRock(): this is Rock {
       return this.figureName === EFigures.rock;
    }
 
-   private isKing(): this is King {
+   isKing(): this is King {
       return this.figureName === EFigures.king;
    }
 
@@ -210,11 +317,11 @@ export default abstract class Figure extends Cell implements IFigure {
       return this.figureName === EFigures.queen;
    }
 
-   isDiagonalFigure(): boolean {
+   private isDiagonalFigure(): boolean {
       return this.isBishop() || this.isQueen();
    }
 
-   isLinearFigure(): boolean {
+   private isLinearFigure(): boolean {
       return this.isRock() || this.isQueen();
    }
 }

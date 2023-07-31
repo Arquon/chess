@@ -43,10 +43,10 @@ export const BoardComponent: FC<Props> = ({}) => {
       setSelectedFigure(null);
    };
    const onFigureClickHandler = (event: React.MouseEvent, figure: Figure): void => {
-      console.log({
-         possibleFigureAttacks: figure.possibleAttacks,
-         attacks: figure.figureColor === EColors.white ? board.whiteAttackedFields : board.blackAttackedFields,
-      });
+      // console.log({
+      //    possibleFigureAttacks: figure.possibleAttacks,
+      //    attacks: figure.figureColor === EColors.white ? board.whiteAttackedFields : board.blackAttackedFields,
+      // });
 
       if (board.currentTurn !== figure.figureColor) return;
       if (!selectedFigure || figure.figureColor === selectedFigure.figureColor) {
@@ -66,7 +66,7 @@ export const BoardComponent: FC<Props> = ({}) => {
                      isSelected={!!isPossibleMove(cell)}
                      onCellClick={onCellClickHandler}
                      onFigureClick={onFigureClickHandler}
-                     isSelectedFigure={!!selectedFigure && Cell.CheckCellsAreTheSame(selectedFigure, cell)}
+                     isSelectedFigure={!!selectedFigure && Cell.checkCellsAreTheSame(selectedFigure, cell)}
                   />
                ))}
             </div>

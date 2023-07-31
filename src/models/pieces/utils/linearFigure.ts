@@ -1,62 +1,65 @@
-import Figure from "@/models/main/figure";
-import { type IPossibleAction, type IMoveInfo } from "@/types/IMove";
+import Figure, { type TDirections, type IFigure } from "@/models/main/figure";
+import { type IMoveInfo } from "@/types/IMove";
 
 export type THorizontalDirections = "left" | "right";
 export type TVerticalDirections = "forward" | "backward";
 export type TLinearDirections = THorizontalDirections | TVerticalDirections;
 
-export abstract class LinearFigure extends Figure {
-   findAllLinearActions(): IPossibleAction[] {
-      const protectionDirection = this.isShieldForKing();
+export interface ILinearFigure extends IFigure {
+   findLinearPossibleMoves: (protectionDirection: TDirections | false) => IMoveInfo[];
+}
 
-      let allActions: IPossibleAction[] = [];
+interface ILinearMoves {
+   leftMoves: IMoveInfo[];
+   rightMoves: IMoveInfo[];
+   forwardMoves: IMoveInfo[];
+   backwardMoves: IMoveInfo[];
+}
+export abstract class LinearFigure extends Figure implements ILinearFigure {
+   private linearMoves: ILinearMoves = {
+      leftMoves: [],
+      rightMoves: [],
+      forwardMoves: [],
+      backwardMoves: [],
+   };
 
+   findLinearPossibleMoves(protectionDirection: TDirections | false): IMoveInfo[] {
+      const { leftMoves, rightMoves, forwardMoves, backwardMoves } = this.linearMoves;
+
+      let possibleMoves: IMoveInfo[] = [];
+
+      switch (protectionDirection) {
+         case false:
+            possibleMoves = [...leftMoves, ...rightMoves, ...forwardMoves, ...backwardMoves];
+            break;
+         case "forward":
+         case "backward":
+            possibleMoves = [...forwardMoves, ...backwardMoves];
+            break;
+         case "left":
+         case "right":
+            possibleMoves = [...leftMoves, ...rightMoves];
+            break;
+      }
+
+      this.possibleMoves = possibleMoves;
+      return possibleMoves;
+   }
+
+   findAllLinearActions(): IMoveInfo[] {
       const leftMoves: IMoveInfo[] = this.getHorizontalMoves("left");
       const rightMoves: IMoveInfo[] = this.getHorizontalMoves("right");
       const forwardMoves: IMoveInfo[] = this.getVerticalMoves("forward");
       const backwardMoves: IMoveInfo[] = this.getVerticalMoves("backward");
 
-      switch (protectionDirection) {
-         case false:
-            allActions = [
-               ...leftMoves.map((move) => ({ ...move, possible: true })),
-               ...rightMoves.map((move) => ({ ...move, possible: true })),
-               ...forwardMoves.map((move) => ({ ...move, possible: true })),
-               ...backwardMoves.map((move) => ({ ...move, possible: true })),
-            ];
-            break;
-         case "forward-left":
-         case "forward-right":
-         case "backward-left":
-         case "backward-right":
-            allActions = [
-               ...leftMoves.map((move) => ({ ...move, possible: false })),
-               ...rightMoves.map((move) => ({ ...move, possible: false })),
-               ...forwardMoves.map((move) => ({ ...move, possible: false })),
-               ...backwardMoves.map((move) => ({ ...move, possible: false })),
-            ];
-            break;
-         case "forward":
-         case "backward":
-            allActions = [
-               ...leftMoves.map((move) => ({ ...move, possible: false })),
-               ...rightMoves.map((move) => ({ ...move, possible: false })),
-               ...forwardMoves.map((move) => ({ ...move, possible: true })),
-               ...backwardMoves.map((move) => ({ ...move, possible: true })),
-            ];
-            break;
-         case "left":
-         case "right":
-            allActions = [
-               ...leftMoves.map((move) => ({ ...move, possible: true })),
-               ...rightMoves.map((move) => ({ ...move, possible: true })),
-               ...forwardMoves.map((move) => ({ ...move, possible: false })),
-               ...backwardMoves.map((move) => ({ ...move, possible: false })),
-            ];
-            break;
-      }
+      this.linearMoves = {
+         leftMoves,
+         rightMoves,
+         forwardMoves,
+         backwardMoves,
+      };
 
-      return allActions;
+      return [...leftMoves, ...rightMoves, ...forwardMoves, ...backwardMoves];
    }
 
    getHorizontalMoves(side: THorizontalDirections): IMoveInfo[] {

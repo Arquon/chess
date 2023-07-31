@@ -1,4 +1,4 @@
-import { type IPossibleAction, type IMoveInfo } from "@/types/IMove";
+import { type IMoveInfo } from "@/types/IMove";
 import Figure, { EFigures, type IFigure } from "../main/figure";
 
 interface IKnight extends IFigure {
@@ -8,9 +8,26 @@ interface IKnight extends IFigure {
 export default class Knight extends Figure implements IKnight {
    figureName: EFigures.knight = EFigures.knight;
 
-   findAllActions(): IPossibleAction[] {
-      const protectionDirection = this.isShieldForKing();
+   findPossibleMoves(): IMoveInfo[] {
+      const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
+      if (shieldMoves) {
+         return shieldMoves;
+      }
+
+      const possibleMoves: IMoveInfo[] = [];
+
+      if (!protectionDirection) {
+         for (const action of this.allActions) {
+            possibleMoves.push(action);
+         }
+      }
+
+      this.possibleMoves = possibleMoves;
+      return this.possibleMoves;
+   }
+
+   findAllActions(): IMoveInfo[] {
       const {
          position: { x, y },
       } = this;
@@ -54,13 +71,8 @@ export default class Knight extends Figure implements IKnight {
          }
       }
 
-      const allActions: IPossibleAction[] = allMoves.map((move) => ({
-         ...move,
-         possible: !protectionDirection,
-      }));
+      this.allActions = allMoves;
 
-      this.allActions = allActions;
-
-      return allActions;
+      return allMoves;
    }
 }

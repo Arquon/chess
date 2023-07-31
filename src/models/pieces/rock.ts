@@ -19,6 +19,18 @@ export default class Rock extends LinearFigure implements IRock {
       this.wereMoved = false;
    }
 
+   findPossibleMoves(): IMoveInfo[] {
+      const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
+
+      if (shieldMoves) {
+         return shieldMoves;
+      }
+
+      const possibleMoves = this.findLinearPossibleMoves(protectionDirection);
+      this.possibleMoves = possibleMoves;
+      return possibleMoves;
+   }
+
    findAllActions(): IMoveInfo[] {
       const allActions = this.findAllLinearActions();
       this.allActions = allActions;

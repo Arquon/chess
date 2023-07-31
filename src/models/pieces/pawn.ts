@@ -1,5 +1,5 @@
 import { EColors } from "@/types/cell/ECellColors";
-import { type TMoveInfo, type IMoveInfo, type IPossibleAction } from "@/types/IMove";
+import { type TMoveInfo, type IMoveInfo } from "@/types/IMove";
 
 import Figure, { EFigures, type IFigure } from "../main/figure";
 
@@ -14,78 +14,102 @@ interface IEnPassantResult extends IMoveInfo {
 export default class Pawn extends Figure implements IPawn {
    figureName: EFigures.pawn = EFigures.pawn;
 
-   findAllActions(): IPossibleAction[] {
-      const protectionDirection = this.isShieldForKing();
+   findPossibleMoves(): IMoveInfo[] {
+      const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
-      const allActions: IPossibleAction[] = [];
+      if (shieldMoves) {
+         return shieldMoves;
+      }
+
+      const possibleMoves: IMoveInfo[] = [];
+
+      switch (protectionDirection) {
+         case false:
+            for (const action of this.allActions) {
+               possibleMoves.push(action);
+            }
+            break;
+         case "forward":
+         case "backward":
+            for (const action of this.allActions) {
+               if (action.position.x === this.position.x) {
+                  possibleMoves.push(action);
+               }
+            }
+            break;
+         case "forward-right":
+            if (this.figureColor === EColors.white) {
+               for (const action of this.allActions) {
+                  if (action.position.x > this.position.x && action.position.y > this.position.y) {
+                     possibleMoves.push(action);
+                  }
+               }
+            }
+            break;
+         case "forward-left":
+            if (this.figureColor === EColors.white) {
+               for (const action of this.allActions) {
+                  if (action.position.x < this.position.x && action.position.y > this.position.y) {
+                     possibleMoves.push(action);
+                  }
+               }
+            }
+            break;
+         case "backward-right":
+            if (this.figureColor === EColors.black) {
+               for (const action of this.allActions) {
+                  if (action.position.x > this.position.x && action.position.y < this.position.y) {
+                     possibleMoves.push(action);
+                  }
+               }
+            }
+            break;
+         case "backward-left":
+            if (this.figureColor === EColors.black) {
+               for (const action of this.allActions) {
+                  if (action.position.x < this.position.x && action.position.y < this.position.y) {
+                     possibleMoves.push(action);
+                  }
+               }
+            }
+            break;
+      }
+
+      this.possibleMoves = possibleMoves;
+
+      return possibleMoves;
+   }
+
+   findAllActions(): IMoveInfo[] {
+      const allActions: IMoveInfo[] = [];
 
       const isCaptureLeftCell = this.checkForAttack("left");
 
       if (isCaptureLeftCell) {
-         if (isCaptureLeftCell.info === "attackWithoutMove") {
-            allActions.push({ ...isCaptureLeftCell, possible: false });
-         } else if (!protectionDirection) {
-            allActions.push({ ...isCaptureLeftCell, possible: true });
-         } else if (protectionDirection === "forward-left" && this.figureColor === EColors.white) {
-            allActions.push({ ...isCaptureLeftCell, possible: true });
-         } else if (protectionDirection === "backward-left" && this.figureColor === EColors.black) {
-            allActions.push({ ...isCaptureLeftCell, possible: true });
-         } else {
-            allActions.push({ ...isCaptureLeftCell, possible: false });
-         }
+         allActions.push(isCaptureLeftCell);
       }
 
       const isCaptureRightCell = this.checkForAttack("right");
       if (isCaptureRightCell) {
-         if (isCaptureRightCell.info === "attackWithoutMove") {
-            allActions.push({ ...isCaptureRightCell, possible: false });
-         } else if (!protectionDirection) {
-            allActions.push({ ...isCaptureRightCell, possible: true });
-         } else if (protectionDirection === "forward-right" && this.figureColor === EColors.white) {
-            allActions.push({ ...isCaptureRightCell, possible: true });
-         } else if (protectionDirection === "backward-right" && this.figureColor === EColors.black) {
-            allActions.push({ ...isCaptureRightCell, possible: true });
-         } else {
-            allActions.push({ ...isCaptureRightCell, possible: false });
-         }
+         allActions.push(isCaptureRightCell);
       }
 
       const isNextMoveCell = this.checkForNextMove();
       if (isNextMoveCell) {
-         if (!protectionDirection || protectionDirection === "forward" || protectionDirection === "backward") {
-            allActions.push({ ...isNextMoveCell, possible: true });
-         } else {
-            allActions.push({ ...isNextMoveCell, possible: false });
-         }
+         allActions.push(isNextMoveCell);
       }
 
       const isLongMoveCell = this.checkForLongMove();
       if (isLongMoveCell) {
-         if (!protectionDirection || protectionDirection === "forward" || protectionDirection === "backward") {
-            allActions.push({ ...isLongMoveCell, possible: true });
-         } else {
-            allActions.push({ ...isLongMoveCell, possible: false });
-         }
+         allActions.push(isLongMoveCell);
       }
 
       const isEnPassant = this.checkForEnPassant();
       if (isEnPassant) {
-         if (!protectionDirection) {
-            allActions.push({ position: isEnPassant.position, info: isEnPassant.info, possible: true, figure: this });
-         } else if (protectionDirection === "forward-left" && isEnPassant.side === "left" && this.figureColor === EColors.white) {
-            allActions.push({ position: isEnPassant.position, info: isEnPassant.info, possible: true, figure: this });
-         } else if (protectionDirection === "backward-left" && isEnPassant.side === "left" && this.figureColor === EColors.black) {
-            allActions.push({ position: isEnPassant.position, info: isEnPassant.info, possible: true, figure: this });
-         } else if (protectionDirection === "forward-right" && isEnPassant.side === "right" && this.figureColor === EColors.white) {
-            allActions.push({ position: isEnPassant.position, info: isEnPassant.info, possible: true, figure: this });
-         } else if (protectionDirection === "backward-right" && isEnPassant.side === "right" && this.figureColor === EColors.black) {
-            allActions.push({ position: isEnPassant.position, info: isEnPassant.info, possible: true, figure: this });
-         } else {
-            allActions.push({ position: isEnPassant.position, info: isEnPassant.info, possible: false, figure: this });
-         }
+         allActions.push({ position: isEnPassant.position, info: isEnPassant.info, figure: this });
       }
 
-      this.allActions = allActions;
+      this.allActions = allActions.map((action) => ({ ...action, possible: false }));
 
       return allActions;
    }
