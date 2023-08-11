@@ -1,6 +1,6 @@
 import { DiagonalFigure, type IDiagonalFigure } from "./utils/diagonalFigure";
-import { type IMoveInfo } from "@/types/IMove";
 import { EFigures } from "../main/figure";
+import { type TMoveInfo } from "@/types/MoveInfo";
 
 interface IBishop extends IDiagonalFigure {
    figureName: EFigures.bishop;
@@ -9,7 +9,7 @@ interface IBishop extends IDiagonalFigure {
 export default class Bishop extends DiagonalFigure implements IBishop {
    figureName: EFigures.bishop = EFigures.bishop;
 
-   findPossibleMoves(): IMoveInfo[] {
+   findPossibleMoves(): TMoveInfo[] {
       const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
       if (shieldMoves) {
@@ -21,7 +21,7 @@ export default class Bishop extends DiagonalFigure implements IBishop {
       return possibleMoves;
    }
 
-   findAllActions(): IMoveInfo[] {
+   findAllActions(): TMoveInfo[] {
       const allActions = this.findAllDiagonalActions();
       this.allActions = allActions;
       return allActions;

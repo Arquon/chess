@@ -1,27 +1,24 @@
 import { EColors } from "@/types/cell/ECellColors";
-import { type TMoveInfo, type IMoveInfo } from "@/types/IMove";
+import { type TMoveDescription } from "@/types/MoveDescription";
+import { type TMoveInfo } from "@/types/MoveInfo";
 
 import Figure, { EFigures, type IFigure } from "../main/figure";
 
-interface IPawn extends IFigure {
+export interface IPawn extends IFigure {
    figureName: EFigures.pawn;
-}
-
-interface IEnPassantResult extends IMoveInfo {
-   side: "right" | "left";
 }
 
 export default class Pawn extends Figure implements IPawn {
    figureName: EFigures.pawn = EFigures.pawn;
 
-   findPossibleMoves(): IMoveInfo[] {
+   findPossibleMoves(): TMoveInfo[] {
       const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
       if (shieldMoves) {
          return shieldMoves;
       }
 
-      const possibleMoves: IMoveInfo[] = [];
+      const possibleMoves: TMoveInfo[] = [];
 
       switch (protectionDirection) {
          case false:
@@ -80,8 +77,8 @@ export default class Pawn extends Figure implements IPawn {
       return possibleMoves;
    }
 
-   findAllActions(): IMoveInfo[] {
-      const allActions: IMoveInfo[] = [];
+   findAllActions(): TMoveInfo[] {
+      const allActions: TMoveInfo[] = [];
 
       const isCaptureLeftCell = this.checkForAttack("left");
 
@@ -106,7 +103,7 @@ export default class Pawn extends Figure implements IPawn {
 
       const isEnPassant = this.checkForEnPassant();
       if (isEnPassant) {
-         allActions.push({ position: isEnPassant.position, info: isEnPassant.info, figure: this });
+         allActions.push(isEnPassant);
       }
 
       this.allActions = allActions.map((action) => ({ ...action, possible: false }));
@@ -114,18 +111,20 @@ export default class Pawn extends Figure implements IPawn {
       return allActions;
    }
 
-   private checkForNextMove(): IMoveInfo | false {
-      const delY = this.figureColor === EColors.white ? 1 : -1;
+   private checkForNextMove(): TMoveInfo | false {
+      const isWhite = this.figureColor === EColors.white;
+      const delY = isWhite ? 1 : -1;
+      const edgeY = isWhite ? 7 : 0;
       const cell = this.board.getCellByPosition({ x: this.position.x, y: this.position.y + delY });
 
       if (!(cell instanceof Figure)) {
-         return { position: cell.position, info: "moveWithoutAttack", figure: this };
+         return { position: cell.position, info: this.position.y + delY === edgeY ? "transformation" : "moveWithoutAttack", figure: this };
       }
 
       return false;
    }
 
-   private checkForLongMove(): IMoveInfo | false {
+   private checkForLongMove(): TMoveInfo | false {
       const startPosition = this.figureColor === EColors.white ? 1 : 6;
       const delY = this.figureColor === EColors.white ? 1 : -1;
 
@@ -133,32 +132,37 @@ export default class Pawn extends Figure implements IPawn {
          const firstCell = this.board.getCellByPosition({ x: this.position.x, y: this.position.y + delY });
          if (!(firstCell instanceof Figure)) {
             const secondCell = this.board.getCellByPosition({ x: this.position.x, y: this.position.y + 2 * delY });
-            if (!(secondCell instanceof Figure)) return { position: secondCell.position, info: "moveWithoutAttack", figure: this };
+            if (!(secondCell instanceof Figure)) {
+               return { position: secondCell.position, info: "moveWithoutAttack", figure: this };
+            }
          }
       }
 
       return false;
    }
 
-   private checkForAttack(side: "left" | "right"): IMoveInfo | false {
-      const delY = this.figureColor === EColors.white ? 1 : -1;
+   private checkForAttack(side: "left" | "right"): TMoveInfo | false {
+      const isWhite = this.figureColor === EColors.white;
+      const delY = isWhite ? 1 : -1;
       const delX = side === "left" ? -1 : 1;
-      const edge = side === "left" ? 0 : 7;
+      const edgeX = side === "left" ? 0 : 7;
+      const edgeY = isWhite ? 7 : 0;
 
       // const whiteLeftExpression = protectionDirection === "forward-left" && this.figureColor === EColors.white && side === "left";
       // const whiteRightExpression = protectionDirection === "forward-right" && this.figureColor === EColors.white && side === "right";
       // const blackLeftExpression = protectionDirection === "backward-left" && this.figureColor === EColors.black && side === "left";
       // const blackRightExpression = protectionDirection === "backward-right" && this.figureColor === EColors.white && side === "right";
 
-      if (this.position.x !== edge) {
+      if (this.position.x !== edgeX) {
          const cell = this.board.getCellByPosition({ x: this.position.x + delX, y: this.position.y + delY });
 
-         let moveInfo: TMoveInfo;
+         let moveInfo: TMoveDescription;
 
          const isFigureEnemyExpression = cell instanceof Figure && cell.figureColor !== this.figureColor;
 
-         if (isFigureEnemyExpression) moveInfo = "capture";
-         else moveInfo = "attackWithoutMove";
+         if (isFigureEnemyExpression) {
+            moveInfo = this.position.y + delY === edgeY ? "transformation-capture" : "capture";
+         } else moveInfo = "attackWithoutMove";
 
          return {
             position: cell.position,
@@ -170,12 +174,12 @@ export default class Pawn extends Figure implements IPawn {
       return false;
    }
 
-   private checkForEnPassant(): IEnPassantResult | false {
+   private checkForEnPassant(): TMoveInfo | false {
       const lastMove = this.board.moves.at(-1);
       if (!lastMove) return false;
       if (!(lastMove.figure instanceof Pawn)) return false;
 
-      const { nextPosition, previousPosition } = lastMove;
+      const { position: nextPosition, previousPosition } = lastMove;
 
       if (this.position.y !== nextPosition.y) return false;
       if (Math.abs(nextPosition.y - previousPosition.y) !== 2) return false;
@@ -187,7 +191,6 @@ export default class Pawn extends Figure implements IPawn {
             y: (nextPosition.y + previousPosition.y) / 2,
          },
          info: "enPassant",
-         side: this.position.x > nextPosition.x ? "left" : "right",
          figure: this,
       };
    }

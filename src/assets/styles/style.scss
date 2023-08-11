@@ -69,3 +69,26 @@ img {
    background-position: center;
    background-size: contain;
 }
+
+.app-modal {
+   z-index: 1;
+   position: fixed;
+   left: 0;
+   right: 0;
+   top: 0;
+   bottom: 0;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+}
+
+.figures-row {
+   display: flex;
+   column-gap: 20px;
+   padding: 20px;
+   background-color: rgba(165, 42, 42, 0.726);
+
+   div {
+      border-right: 2px solid black;
+   }
+}

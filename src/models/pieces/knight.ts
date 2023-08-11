@@ -1,4 +1,4 @@
-import { type IMoveInfo } from "@/types/IMove";
+import { type TMoveInfo } from "@/types/MoveInfo";
 import Figure, { EFigures, type IFigure } from "../main/figure";
 
 interface IKnight extends IFigure {
@@ -8,14 +8,14 @@ interface IKnight extends IFigure {
 export default class Knight extends Figure implements IKnight {
    figureName: EFigures.knight = EFigures.knight;
 
-   findPossibleMoves(): IMoveInfo[] {
+   findPossibleMoves(): TMoveInfo[] {
       const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
       if (shieldMoves) {
          return shieldMoves;
       }
 
-      const possibleMoves: IMoveInfo[] = [];
+      const possibleMoves: TMoveInfo[] = [];
 
       if (!protectionDirection) {
          for (const action of this.allActions) {
@@ -27,11 +27,11 @@ export default class Knight extends Figure implements IKnight {
       return this.possibleMoves;
    }
 
-   findAllActions(): IMoveInfo[] {
+   findAllActions(): TMoveInfo[] {
       const {
          position: { x, y },
       } = this;
-      const allMoves: IMoveInfo[] = [];
+      const allMoves: TMoveInfo[] = [];
 
       for (let delX = -2; delX <= 2; delX += 4) {
          for (let delY = -1; delY <= 1; delY += 2) {

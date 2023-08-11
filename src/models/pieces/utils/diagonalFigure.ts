@@ -1,17 +1,17 @@
 import Figure, { type TDirections, type IFigure } from "@/models/main/figure";
-import { type IMoveInfo } from "@/types/IMove";
+import { type TMoveInfo } from "@/types/MoveInfo";
 
 export type TDiagonalDirections = "forward-right" | "backward-right" | "backward-left" | "forward-left";
 
 export interface IDiagonalFigure extends IFigure {
-   findDiagonalPossibleMoves: (protectionDirection: TDirections | false) => IMoveInfo[];
+   findDiagonalPossibleMoves: (protectionDirection: TDirections | false) => TMoveInfo[];
 }
 
 interface IDiagonalMoves {
-   forwardLeftMoves: IMoveInfo[];
-   forwardRightMoves: IMoveInfo[];
-   backwardLeftMoves: IMoveInfo[];
-   backwardRightMoves: IMoveInfo[];
+   forwardLeftMoves: TMoveInfo[];
+   forwardRightMoves: TMoveInfo[];
+   backwardLeftMoves: TMoveInfo[];
+   backwardRightMoves: TMoveInfo[];
 }
 export abstract class DiagonalFigure extends Figure implements IDiagonalFigure {
    private diagonalMoves: IDiagonalMoves = {
@@ -21,10 +21,10 @@ export abstract class DiagonalFigure extends Figure implements IDiagonalFigure {
       backwardRightMoves: [],
    };
 
-   findDiagonalPossibleMoves(protectionDirection: TDirections | false): IMoveInfo[] {
+   findDiagonalPossibleMoves(protectionDirection: TDirections | false): TMoveInfo[] {
       const { forwardLeftMoves, forwardRightMoves, backwardLeftMoves, backwardRightMoves } = this.diagonalMoves;
 
-      let possibleMoves: IMoveInfo[] = [];
+      let possibleMoves: TMoveInfo[] = [];
 
       switch (protectionDirection) {
          case false:
@@ -44,19 +44,19 @@ export abstract class DiagonalFigure extends Figure implements IDiagonalFigure {
       return possibleMoves;
    }
 
-   findAllDiagonalActions(): IMoveInfo[] {
-      const forwardLeftMoves: IMoveInfo[] = this.getDiagonalMoves("forward-left");
-      const forwardRightMoves: IMoveInfo[] = this.getDiagonalMoves("forward-right");
-      const backwardLeftMoves: IMoveInfo[] = this.getDiagonalMoves("backward-left");
-      const backwardRightMoves: IMoveInfo[] = this.getDiagonalMoves("backward-right");
+   findAllDiagonalActions(): TMoveInfo[] {
+      const forwardLeftMoves: TMoveInfo[] = this.getDiagonalMoves("forward-left");
+      const forwardRightMoves: TMoveInfo[] = this.getDiagonalMoves("forward-right");
+      const backwardLeftMoves: TMoveInfo[] = this.getDiagonalMoves("backward-left");
+      const backwardRightMoves: TMoveInfo[] = this.getDiagonalMoves("backward-right");
 
       this.diagonalMoves = { forwardLeftMoves, forwardRightMoves, backwardLeftMoves, backwardRightMoves };
 
       return [...forwardLeftMoves, ...forwardRightMoves, ...backwardLeftMoves, ...backwardRightMoves];
    }
 
-   getDiagonalMoves(direction: TDiagonalDirections): IMoveInfo[] {
-      const diagonalMoves: IMoveInfo[] = [];
+   getDiagonalMoves(direction: TDiagonalDirections): TMoveInfo[] {
+      const diagonalMoves: TMoveInfo[] = [];
       let stepDelX: number;
       let stepDelY: number;
       let edgeX: number;

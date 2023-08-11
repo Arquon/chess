@@ -1,4 +1,4 @@
-import { type IMove } from "@/types/IMove";
+import { type TMove } from "@/types/Move";
 import Board from "./main/board";
 
 interface IReactBoard {
@@ -13,7 +13,7 @@ export default class ReactBoard extends Board implements IReactBoard {
       this.subscriptions.push(fn);
    }
 
-   makeMove(move: IMove): void {
+   makeMove(move: TMove): void {
       super.makeMove(move);
       this.subscriptions.forEach((fn) => {
          fn();

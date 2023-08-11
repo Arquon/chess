@@ -1,4 +1,3 @@
-import { type TMoveInfo } from "@/types/IMove";
 import { type ICellPosition } from "@/types/cell/TCellNumbers";
 
 export function applyMixins(derivedCtor: any, constructors: any[]): void {
@@ -15,5 +14,3 @@ export function getClassNameFromArray(arr: string[]): string | undefined {
 }
 
 export const cellPositionToString = (cellPosition: ICellPosition): string => `${cellPosition.x}-${cellPosition.y}`;
-
-export const isAttackMove = (info: TMoveInfo): boolean => info !== "moveWithoutAttack" && info !== "enPassant";

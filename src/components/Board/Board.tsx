@@ -1,16 +1,22 @@
-import React, { useState, type FC, useEffect, useMemo } from "react";
+import React, { useState, type FC, useEffect, useMemo, useRef } from "react";
 import { CellComponent } from "../Cell/Cell";
 import { EColors } from "@/types/cell/ECellColors";
-import { type IMoveInfo } from "@/types/IMove";
 import ReactBoard from "@/models/reactBoard";
 import Cell from "@/models/main/cell";
 import type Figure from "@/models/main/figure";
+import { SelectFigures } from "../SelectFigures/SelectFigures";
+import { PortalModal } from "../app/Portal";
+import { type TransformationFigure } from "@/models/main/figure";
+import { isPawnMoveInfo, type TMoveInfo } from "@/types/MoveInfo";
 
 interface Props {}
 
 export const BoardComponent: FC<Props> = ({}) => {
    const [board, setBoard] = useState(() => new ReactBoard());
    const [selectedFigure, setSelectedFigure] = useState<Figure | null>(null);
+   const [isTransformFiguresShow, setIsTransformFiguresShow] = useState(false);
+
+   const possibleMove = useRef<TMoveInfo | null>(null);
 
    useEffect(() => {
       board.addSubscription(() => {
@@ -24,35 +30,60 @@ export const BoardComponent: FC<Props> = ({}) => {
    }, [selectedFigure]);
 
    const getCellColor = (rowIndex: number, cellIndex: number): EColors => ((rowIndex + cellIndex) % 2 === 0 ? EColors.black : EColors.white);
-   const isPossibleMove = (cell: Cell): IMoveInfo | undefined =>
+
+   const isPossibleMove = (cell: Cell): TMoveInfo | undefined =>
       possibleMoves.find((selectedField) => selectedField.position.x === cell.position.x && selectedField.position.y === cell.position.y);
 
    const onCellClickHandler = (event: React.MouseEvent, cell: Cell): void => {
-      if (!selectedFigure || event.defaultPrevented) return;
-      const possibleMove = isPossibleMove(cell);
-      if (!possibleMove) {
+      if (event.defaultPrevented) return;
+      const possibleCellMove = isPossibleMove(cell);
+
+      if (!possibleCellMove) {
          setSelectedFigure(null);
+         possibleMove.current = null;
          return;
       }
-      board.makeMove({
-         previousPosition: selectedFigure.position,
-         figure: selectedFigure,
-         nextPosition: possibleMove.position,
-         info: possibleMove.info,
-      });
+
+      possibleMove.current = possibleCellMove;
+
+      if (possibleCellMove.info === "transformation" || possibleCellMove.info === "transformation-capture") {
+         setIsTransformFiguresShow(true);
+         return;
+      }
+
+      makeMove();
+   };
+
+   const makeMove = (transformationFigure?: TransformationFigure): void => {
+      if (!selectedFigure || !possibleMove.current) return;
+
+      const { current: move } = possibleMove;
+
+      if (isPawnMoveInfo(move)) {
+         board.makeMove({ ...move, previousPosition: selectedFigure.position, transformationFigure });
+      } else {
+         board.makeMove({
+            ...move,
+            previousPosition: selectedFigure.position,
+         });
+      }
+
+      possibleMove.current = null;
+
       setSelectedFigure(null);
    };
-   const onFigureClickHandler = (event: React.MouseEvent, figure: Figure): void => {
-      // console.log({
-      //    possibleFigureAttacks: figure.possibleAttacks,
-      //    attacks: figure.figureColor === EColors.white ? board.whiteAttackedFields : board.blackAttackedFields,
-      // });
 
+   const onFigureClickHandler = (event: React.MouseEvent, figure: Figure): void => {
       if (board.currentTurn !== figure.figureColor) return;
       if (!selectedFigure || figure.figureColor === selectedFigure.figureColor) {
          event.preventDefault();
          setSelectedFigure(figure);
       }
+   };
+
+   const selectTransformationFigure = (figure: TransformationFigure): void => {
+      makeMove(figure);
+      setIsTransformFiguresShow(false);
    };
 
    return (
@@ -71,6 +102,11 @@ export const BoardComponent: FC<Props> = ({}) => {
                ))}
             </div>
          ))}
+         {isTransformFiguresShow && (
+            <PortalModal>
+               <SelectFigures color={board.currentTurn} makeMove={selectTransformationFigure} />
+            </PortalModal>
+         )}
       </div>
    );
 };

@@ -32,18 +32,32 @@ export default class Cell implements ICell {
       );
    }
 
-   static checkIfCellsOnTheSameDiagonal(firstPoint: ICellPosition, secondPoint: ICellPosition, cell: ICellPosition): boolean {
+   static checkIfCellsOnTheSameDiagonal(firstPoint: ICellPosition, secondPoint: ICellPosition, thirdPoint: ICellPosition): boolean {
       const k: number = (firstPoint.y - secondPoint.y) / (firstPoint.x - secondPoint.x);
-      if (Math.abs(k) !== 1) throw "points are not on one diagonal";
+      if (Math.abs(k) !== 1) return false;
       const b: number = firstPoint.y - k * firstPoint.x;
-      const test: number = k * cell.x + b;
-      return test === cell.y;
+      const test: number = k * thirdPoint.x + b;
+      return test === thirdPoint.y;
+   }
+
+   static checkIfCellsOnTheSameHorizontal(firstPoint: ICellPosition, secondPoint: ICellPosition, thirdPoint: ICellPosition): boolean {
+      return firstPoint.y === secondPoint.y && secondPoint.y === thirdPoint.y;
+   }
+
+   static checkIfCellsOnTheSameVertical(firstPoint: ICellPosition, secondPoint: ICellPosition, thirdPoint: ICellPosition): boolean {
+      return firstPoint.x === secondPoint.x && secondPoint.x === thirdPoint.x;
+   }
+
+   static checkIfCellsOnLine(firstPoint: ICellPosition, secondPoint: ICellPosition, thirdPoint: ICellPosition): boolean {
+      if (firstPoint.x === secondPoint.x) return Cell.checkIfCellsOnTheSameHorizontal(firstPoint, secondPoint, thirdPoint);
+      if (firstPoint.y === secondPoint.y) return Cell.checkIfCellsOnTheSameVertical(firstPoint, secondPoint, thirdPoint);
+      return false;
    }
 
    static checkIfCellOnLineBetweenTwoPoints(firstPoint: ICellPosition, secondPoint: ICellPosition, cell: ICellPosition): boolean {
       if (firstPoint.x === secondPoint.x) return Cell.checkIfCellOnVerticalBetweenPoints(firstPoint, secondPoint, cell);
       if (firstPoint.y === secondPoint.y) return Cell.checkIfCellOnHorizontalBetweenPoints(firstPoint, secondPoint, cell);
-      throw "points are not on one line";
+      return false;
    }
 
    static checkIfCellOnVerticalBetweenPoints(firstPoint: ICellPosition, secondPoint: ICellPosition, cell: ICellPosition): boolean {
