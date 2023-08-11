@@ -1,4 +1,5 @@
 export type TCastleMoveDescription = "short-castle" | "long-castle";
-export type TPawnMoveDescription = "enPassant" | "transformation" | "transformation-capture";
+export type TTransformationMoveDescription = "transformation" | "transformation-capture";
+export type TEnPassantMoveDescription = "enPassant";
 export type TCommonMoveDescription = "capture" | "moveWithoutAttack" | "attackWithoutMove";
-export type TMoveDescription = TCommonMoveDescription | TCastleMoveDescription | TPawnMoveDescription;
+export type TMoveDescription = TCommonMoveDescription | TCastleMoveDescription | TTransformationMoveDescription | TEnPassantMoveDescription;

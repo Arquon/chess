@@ -7,7 +7,8 @@ import type Figure from "@/models/main/figure";
 import { SelectFigures } from "../SelectFigures/SelectFigures";
 import { PortalModal } from "../app/Portal";
 import { type TransformationFigure } from "@/models/main/figure";
-import { isPawnMoveInfo, type TMoveInfo } from "@/types/MoveInfo";
+import { isPawnMoveInfo, isTransformationMoveInfo } from "@/types/moves/PawnMoveInfo";
+import { type TMoveInfoWithoutTransformation } from "@/types/MoveInfo";
 
 interface Props {}
 
@@ -16,7 +17,7 @@ export const BoardComponent: FC<Props> = ({}) => {
    const [selectedFigure, setSelectedFigure] = useState<Figure | null>(null);
    const [isTransformFiguresShow, setIsTransformFiguresShow] = useState(false);
 
-   const possibleMove = useRef<TMoveInfo | null>(null);
+   const possibleMove = useRef<TMoveInfoWithoutTransformation | null>(null);
 
    useEffect(() => {
       board.addSubscription(() => {
@@ -31,8 +32,10 @@ export const BoardComponent: FC<Props> = ({}) => {
 
    const getCellColor = (rowIndex: number, cellIndex: number): EColors => ((rowIndex + cellIndex) % 2 === 0 ? EColors.black : EColors.white);
 
-   const isPossibleMove = (cell: Cell): TMoveInfo | undefined =>
-      possibleMoves.find((selectedField) => selectedField.position.x === cell.position.x && selectedField.position.y === cell.position.y);
+   const isPossibleMove = (cell: Cell): TMoveInfoWithoutTransformation | undefined =>
+      possibleMoves.find(
+         ({ info: { position: possiblePosition } }) => possiblePosition.x === cell.position.x && possiblePosition.y === cell.position.y
+      );
 
    const onCellClickHandler = (event: React.MouseEvent, cell: Cell): void => {
       if (event.defaultPrevented) return;
@@ -45,8 +48,9 @@ export const BoardComponent: FC<Props> = ({}) => {
       }
 
       possibleMove.current = possibleCellMove;
+      const { description: moveInfo } = possibleCellMove.info;
 
-      if (possibleCellMove.info === "transformation" || possibleCellMove.info === "transformation-capture") {
+      if (moveInfo === "transformation" || moveInfo === "transformation-capture") {
          setIsTransformFiguresShow(true);
          return;
       }
@@ -54,18 +58,16 @@ export const BoardComponent: FC<Props> = ({}) => {
       makeMove();
    };
 
-   const makeMove = (transformationFigure?: TransformationFigure): void => {
+   const makeMove = (transformation?: TransformationFigure): void => {
       if (!selectedFigure || !possibleMove.current) return;
 
       const { current: move } = possibleMove;
 
-      if (isPawnMoveInfo(move)) {
-         board.makeMove({ ...move, previousPosition: selectedFigure.position, transformationFigure });
+      if (isPawnMoveInfo(move) && isTransformationMoveInfo(move)) {
+         if (!transformation) throw "No Transformation Figure";
+         board.makeMove({ ...move, info: { ...move.info, transformation } });
       } else {
-         board.makeMove({
-            ...move,
-            previousPosition: selectedFigure.position,
-         });
+         board.makeMove(move);
       }
 
       possibleMove.current = null;

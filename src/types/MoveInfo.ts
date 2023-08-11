@@ -1,55 +1,34 @@
-import type Figure from "@/models/main/figure";
-import type King from "@/models/pieces/king";
-import type Knight from "@/models/pieces/knight";
-import type Pawn from "@/models/pieces/pawn";
-import type Rock from "@/models/pieces/rock";
-import { type DiagonalFigure } from "@/models/pieces/utils/diagonalFigure";
-import { type LinearFigure } from "@/models/pieces/utils/linearFigure";
+import { type TransformationFigure, type EFigures } from "@/models/main/figure";
 import { type ICellPosition } from "./cell/TCellNumbers";
-import { type TPawnMoveDescription, type TCommonMoveDescription, type TMoveDescription, type TCastleMoveDescription } from "./MoveDescription";
+import { type TMoveDescription } from "./MoveDescription";
+import { type TCommonMoveInfo } from "./moves/CommonMoveInfo";
+import { type TKingMoveInfo } from "./moves/KingMoveInfo";
+import { type IPawnTransformationMoveInfo, type TPawnMoveInfo } from "./moves/PawnMoveInfo";
 
-export interface ITemplateMoveInfo {
+export interface IFigureInfo {
    position: ICellPosition;
-   info?: TMoveDescription;
-   figure: Figure;
+}
+export interface IFigureInfoWithType<T extends EFigures> {
+   type: T;
+   position: ICellPosition;
 }
 
-export interface IPawnMoveInfo extends ITemplateMoveInfo {
-   figure: Pawn;
-   info?: TPawnMoveDescription | TCommonMoveDescription;
-   rock?: never;
+export interface IMoveDescription<D extends TMoveDescription = TMoveDescription> {
+   position: ICellPosition;
+   description?: D;
 }
 
-export interface ICommonMoveInfo extends ITemplateMoveInfo {
-   info?: TCommonMoveDescription;
-   figure: Knight | DiagonalFigure | LinearFigure;
-   rock?: never;
+export interface IMoveInfoTemplate {
+   info: IMoveDescription;
+   figure: IFigureInfo;
 }
 
-export interface IKingCommonMoveInfo extends ITemplateMoveInfo {
-   figure: King;
-   rock?: never;
-   info?: TCommonMoveDescription;
-}
+export type TMoveInfoWithoutTransformation = TPawnMoveInfo | TCommonMoveInfo | TKingMoveInfo;
 
-export interface IKingCastleMoveInfo extends ITemplateMoveInfo {
-   figure: King;
-   rock: Rock;
-   info: TCastleMoveDescription;
-}
+export type TMoveInfoWithTransformation<T extends IPawnTransformationMoveInfo = IPawnTransformationMoveInfo> = T & {
+   info: T["info"] & { transformation: TransformationFigure };
+};
 
-export type TKingMoveInfo = IKingCommonMoveInfo | IKingCastleMoveInfo;
-
-export type TMoveInfo = IPawnMoveInfo | ICommonMoveInfo | TKingMoveInfo;
-
-export function isPawnMoveInfo(moveInfo: TMoveInfo): moveInfo is IPawnMoveInfo {
-   return moveInfo.figure.isPawn();
-}
-
-export function isKingMoveInfo(moveInfo: TMoveInfo): moveInfo is TKingMoveInfo {
-   return moveInfo.figure.isKing();
-}
-
-export function isCommonMoveInfo(moveInfo: TMoveInfo): moveInfo is ICommonMoveInfo {
-   return moveInfo.figure.isKnight() || moveInfo.figure.isBishop() || moveInfo.figure.isRock() || moveInfo.figure.isQueen();
-}
+export type TMoveInfo<T extends TMoveInfoWithoutTransformation = TMoveInfoWithoutTransformation> = T extends IPawnTransformationMoveInfo
+   ? TMoveInfoWithTransformation
+   : T;

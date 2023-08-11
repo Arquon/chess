@@ -11,12 +11,12 @@ export default class Cell implements ICell {
       this.position = position;
    }
 
-   static checkCellsHasSamePosition(firstCell: Cell, secondCell: Cell): boolean {
-      return firstCell.position.x === secondCell.position.x && firstCell.position.y === secondCell.position.y;
+   static checkCellsHasSamePosition(firstPoint: ICellPosition, secondPoint: ICellPosition): boolean {
+      return firstPoint.x === secondPoint.x && firstPoint.y === secondPoint.y;
    }
 
    static checkCellsAreTheSame(firstCell: Cell, secondCell: Cell): boolean {
-      return this.checkCellsHasSamePosition(firstCell, secondCell) && firstCell.constructor === secondCell.constructor;
+      return this.checkCellsHasSamePosition(firstCell.position, secondCell.position) && firstCell.constructor === secondCell.constructor;
    }
 
    static checkIfCellOnDiagonalBetweenTwoPoints(firstPoint: ICellPosition, secondPoint: ICellPosition, cell: ICellPosition): boolean {

@@ -11,7 +11,7 @@ import type King from "../pieces/king";
 import type Knight from "../pieces/knight";
 import type Pawn from "../pieces/pawn";
 import { cellPositionToString } from "@/utils/functions";
-import { type TMoveInfo } from "@/types/MoveInfo";
+import { type TMoveInfoWithoutTransformation } from "@/types/MoveInfo";
 
 export type FigureConstructor = new (position: ICellPosition, color: EColors, board: Board) => Figure;
 export type TDirections = TLinearDirections | TDiagonalDirections;
@@ -31,16 +31,18 @@ export interface IFigure {
    isAlive: boolean;
    figureName: EFigures | null;
    board: Board;
-   possibleMoves: TMoveInfo[];
-   possibleAttacks: TMoveInfo[];
-   findAllActions: (board?: Board) => TMoveInfo[];
+   possibleMoves: TMoveInfoWithoutTransformation[];
+   possibleAttacks: TMoveInfoWithoutTransformation[];
+   findAllActions: (board?: Board) => TMoveInfoWithoutTransformation[];
    isShieldForKing: () => TDirections | false;
 }
 
-interface ShieldMovesAndProtectionDirectionType {
-   shieldMoves: TMoveInfo[] | null;
+interface ShieldMovesAndProtectionDirectionType<F extends Figure> {
+   shieldMoves: Array<TFigureMoveInfo<F>> | null;
    protectionDirection: TDirections | false;
 }
+
+type TFigureMoveInfo<F extends Figure> = F["allActions"][0];
 
 export default abstract class Figure extends Cell implements IFigure {
    isAlive: boolean;
@@ -48,8 +50,8 @@ export default abstract class Figure extends Cell implements IFigure {
    board: Board;
    readonly figureName: EFigures | null = null;
 
-   private _allActions: TMoveInfo[] = [];
-   private _possibleMoves: TMoveInfo[] = [];
+   abstract allActions: TMoveInfoWithoutTransformation[];
+   protected _possibleMoves: Array<TFigureMoveInfo<this>> = [];
 
    constructor(position: ICellPosition, color: EColors, board: Board) {
       super(position);
@@ -62,25 +64,18 @@ export default abstract class Figure extends Cell implements IFigure {
       return firstFigure.figureColor !== secondFigure.figureColor;
    }
 
-   protected get allActions(): TMoveInfo[] {
-      return this._allActions;
+   get possibleMoves(): Array<TFigureMoveInfo<this>> {
+      return this._possibleMoves.filter(({ info: description }) => description.description !== "attackWithoutMove");
    }
 
-   protected set allActions(value: TMoveInfo[]) {
-      this._allActions = value;
-   }
-
-   get possibleMoves(): TMoveInfo[] {
-      return this._possibleMoves.filter((move) => move.info !== "attackWithoutMove");
-   }
-
-   protected set possibleMoves(value: TMoveInfo[]) {
+   protected set possibleMoves(value: Array<TFigureMoveInfo<this>>) {
       this._possibleMoves = value;
    }
 
-   get possibleAttacks(): TMoveInfo[] {
-      return this._allActions.filter(
-         (possibleAttack) => possibleAttack.info === undefined || possibleAttack.info === "capture" || possibleAttack.info === "attackWithoutMove"
+   get possibleAttacks(): Array<TFigureMoveInfo<this>> {
+      return this.allActions.filter(
+         ({ info: description }) =>
+            description.description === undefined || description.description === "capture" || description.description === "attackWithoutMove"
       );
    }
 
@@ -101,7 +96,11 @@ export default abstract class Figure extends Cell implements IFigure {
 
       if (!attacksMoves || !attacksMoves.length) return false;
 
-      for (const { figure } of attacksMoves) {
+      for (const {
+         figure: { position },
+      } of attacksMoves) {
+         const figure = this.board.getFigureByPosition(position);
+
          if (figure.position.x === this.position.x && figure.isLinearFigure()) {
             return direction;
          }
@@ -126,7 +125,10 @@ export default abstract class Figure extends Cell implements IFigure {
 
       if (!attacksMoves || !attacksMoves.length) return false;
 
-      for (const { figure } of attacksMoves) {
+      for (const {
+         figure: { position },
+      } of attacksMoves) {
+         const figure = this.board.getFigureByPosition(position);
          if (figure.isLinearFigure() && figure.position.y === this.position.y) {
             return direction;
          }
@@ -173,7 +175,10 @@ export default abstract class Figure extends Cell implements IFigure {
 
       if (!attacksMoves || !attacksMoves.length) return false;
 
-      for (const { figure } of attacksMoves) {
+      for (const {
+         figure: { position },
+      } of attacksMoves) {
+         const figure = this.board.getFigureByPosition(position);
          if (figure.isDiagonalFigure() && Cell.checkIfCellsOnTheSameDiagonal(kingPosition, this.position, figure.position))
             return protectionDirection;
       }
@@ -209,7 +214,7 @@ export default abstract class Figure extends Cell implements IFigure {
       return false;
    }
 
-   protected getProtectionDirectionAndShieldMoves(): ShieldMovesAndProtectionDirectionType {
+   protected getProtectionDirectionAndShieldMoves(): ShieldMovesAndProtectionDirectionType<this> {
       const attacksOnKing = this.board.getAttacksOnKing(this.figureColor);
       const protectionDirection = this.isShieldForKing();
 
@@ -221,7 +226,7 @@ export default abstract class Figure extends Cell implements IFigure {
       }
 
       if (attacksOnKing.length) {
-         const shieldMoves: TMoveInfo[] = this.findShieldedMoves(attacksOnKing[0]);
+         const shieldMoves = this.findShieldedMoves(attacksOnKing[0]);
          this.possibleMoves = shieldMoves;
          return {
             shieldMoves,
@@ -235,17 +240,23 @@ export default abstract class Figure extends Cell implements IFigure {
       };
    }
 
-   private findShieldedMoves(attackMove: TMoveInfo): TMoveInfo[] {
-      const shieldedMoves: TMoveInfo[] = [];
-      const { position: kingPosition } = attackMove;
-      const { figure: attackFigure } = attackMove;
-      const { position: attackFigurePosition } = attackFigure;
+   private findShieldedMoves(attackMove: TMoveInfoWithoutTransformation): Array<TFigureMoveInfo<this>> {
+      const shieldedMoves: Array<TFigureMoveInfo<this>> = [];
 
-      if (this.position.x === 6 && this.position.y === 6) console.log({ actions: this.allActions });
+      const {
+         info: attackMoveDescription,
+         figure: { position: attackFigurePosition },
+      } = attackMove;
+
+      const attackFigure = this.board.getFigureByPosition(attackFigurePosition);
+      const { position: kingPosition } = attackMoveDescription;
 
       if (attackFigure.isKnight() || attackFigure.isPawn()) {
          for (const action of this.allActions) {
-            if (Cell.checkCellsHasSamePosition(action, attackMove)) {
+            const {
+               info: { position: actionPosition },
+            } = action;
+            if (Cell.checkCellsHasSamePosition(actionPosition, attackFigurePosition)) {
                shieldedMoves.push(action);
                return shieldedMoves;
             }
@@ -254,7 +265,10 @@ export default abstract class Figure extends Cell implements IFigure {
 
       if (attackFigure.isBishop()) {
          for (const action of this.allActions) {
-            if (Cell.checkIfCellOnDiagonalBetweenTwoPoints(kingPosition, attackFigurePosition, action.position)) {
+            const {
+               info: { position: actionPosition },
+            } = action;
+            if (Cell.checkIfCellOnDiagonalBetweenTwoPoints(kingPosition, attackFigurePosition, actionPosition)) {
                shieldedMoves.push(action);
             }
          }
@@ -262,7 +276,10 @@ export default abstract class Figure extends Cell implements IFigure {
 
       if (attackFigure.isRock()) {
          for (const action of this.allActions) {
-            if (Cell.checkIfCellOnLineBetweenTwoPoints(kingPosition, attackFigurePosition, action.position)) {
+            const {
+               info: { position: actionPosition },
+            } = action;
+            if (Cell.checkIfCellOnLineBetweenTwoPoints(kingPosition, attackFigurePosition, actionPosition)) {
                shieldedMoves.push(action);
             }
          }
@@ -277,7 +294,10 @@ export default abstract class Figure extends Cell implements IFigure {
          if (!checkFunc) throw "Queen attack error";
 
          for (const action of this.allActions) {
-            if (checkFunc(kingPosition, attackFigurePosition, action.position)) {
+            const {
+               info: { position: actionPosition },
+            } = action;
+            if (checkFunc(kingPosition, attackFigurePosition, actionPosition)) {
                shieldedMoves.push(action);
             }
          }
@@ -286,9 +306,9 @@ export default abstract class Figure extends Cell implements IFigure {
       return shieldedMoves;
    }
 
-   abstract findAllActions(board?: Board): TMoveInfo[];
+   abstract findAllActions(board?: Board): TMoveInfoWithoutTransformation[];
 
-   abstract findPossibleMoves(): TMoveInfo[];
+   abstract findPossibleMoves(): TMoveInfoWithoutTransformation[];
 
    bindBoard(board: Board): void {
       this.board = board;

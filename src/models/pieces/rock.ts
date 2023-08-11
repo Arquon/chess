@@ -3,7 +3,8 @@ import { type EColors } from "@/types/cell/ECellColors";
 import type Board from "../main/board";
 import { LinearFigure } from "./utils/linearFigure";
 import { EFigures, type IFigure } from "../main/figure";
-import { type TMoveInfo } from "@/types/MoveInfo";
+import { type TMoveInfoWithoutTransformation } from "@/types/MoveInfo";
+import { type ICommonMoveInfoTemplate, type IRockMoveInfo } from "@/types/moves/CommonMoveInfo";
 
 interface IRock extends IFigure {
    wereMoved: boolean;
@@ -13,27 +14,30 @@ interface IRock extends IFigure {
 export default class Rock extends LinearFigure implements IRock {
    wereMoved: boolean;
    figureName: EFigures.rock = EFigures.rock;
+   allActions: IRockMoveInfo[] = [];
 
    constructor(position: ICellPosition, color: EColors, board: Board, wereMoved: boolean = false) {
       super(position, color, board);
       this.wereMoved = wereMoved;
    }
 
-   findPossibleMoves(): TMoveInfo[] {
+   findPossibleMoves(): IRockMoveInfo[] {
       const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
       if (shieldMoves) {
          return shieldMoves;
       }
 
-      const possibleMoves = this.findLinearPossibleMoves(protectionDirection);
-      this.possibleMoves = possibleMoves;
-      return possibleMoves;
+      const possibleMoves: ICommonMoveInfoTemplate[] = this.findLinearPossibleMoves(protectionDirection);
+      const possibleRockMoves: IRockMoveInfo[] = possibleMoves.map((move) => ({ ...move, figure: { ...move.figure, type: EFigures.rock } }));
+      this.possibleMoves = possibleRockMoves;
+      return possibleRockMoves;
    }
 
-   findAllActions(): TMoveInfo[] {
-      const allActions = this.findAllLinearActions();
-      this.allActions = allActions;
-      return allActions;
+   findAllActions(): TMoveInfoWithoutTransformation[] {
+      const allActions: ICommonMoveInfoTemplate[] = this.findAllLinearActions();
+      const allRockActions: IRockMoveInfo[] = allActions.map((move) => ({ ...move, figure: { ...move.figure, type: EFigures.rock } }));
+      this.allActions = allRockActions;
+      return allRockActions;
    }
 }

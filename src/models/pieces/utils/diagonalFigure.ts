@@ -1,17 +1,17 @@
 import Figure, { type TDirections, type IFigure } from "@/models/main/figure";
-import { type TMoveInfo } from "@/types/MoveInfo";
+import { type ICommonMoveInfoTemplate } from "@/types/moves/CommonMoveInfo";
 
 export type TDiagonalDirections = "forward-right" | "backward-right" | "backward-left" | "forward-left";
 
 export interface IDiagonalFigure extends IFigure {
-   findDiagonalPossibleMoves: (protectionDirection: TDirections | false) => TMoveInfo[];
+   findDiagonalPossibleMoves: (protectionDirection: TDirections | false) => ICommonMoveInfoTemplate[];
 }
 
 interface IDiagonalMoves {
-   forwardLeftMoves: TMoveInfo[];
-   forwardRightMoves: TMoveInfo[];
-   backwardLeftMoves: TMoveInfo[];
-   backwardRightMoves: TMoveInfo[];
+   forwardLeftMoves: ICommonMoveInfoTemplate[];
+   forwardRightMoves: ICommonMoveInfoTemplate[];
+   backwardLeftMoves: ICommonMoveInfoTemplate[];
+   backwardRightMoves: ICommonMoveInfoTemplate[];
 }
 export abstract class DiagonalFigure extends Figure implements IDiagonalFigure {
    private diagonalMoves: IDiagonalMoves = {
@@ -21,10 +21,10 @@ export abstract class DiagonalFigure extends Figure implements IDiagonalFigure {
       backwardRightMoves: [],
    };
 
-   findDiagonalPossibleMoves(protectionDirection: TDirections | false): TMoveInfo[] {
+   findDiagonalPossibleMoves(protectionDirection: TDirections | false): ICommonMoveInfoTemplate[] {
       const { forwardLeftMoves, forwardRightMoves, backwardLeftMoves, backwardRightMoves } = this.diagonalMoves;
 
-      let possibleMoves: TMoveInfo[] = [];
+      let possibleMoves: ICommonMoveInfoTemplate[] = [];
 
       switch (protectionDirection) {
          case false:
@@ -44,19 +44,19 @@ export abstract class DiagonalFigure extends Figure implements IDiagonalFigure {
       return possibleMoves;
    }
 
-   findAllDiagonalActions(): TMoveInfo[] {
-      const forwardLeftMoves: TMoveInfo[] = this.getDiagonalMoves("forward-left");
-      const forwardRightMoves: TMoveInfo[] = this.getDiagonalMoves("forward-right");
-      const backwardLeftMoves: TMoveInfo[] = this.getDiagonalMoves("backward-left");
-      const backwardRightMoves: TMoveInfo[] = this.getDiagonalMoves("backward-right");
+   findAllDiagonalActions(): ICommonMoveInfoTemplate[] {
+      const forwardLeftMoves: ICommonMoveInfoTemplate[] = this.getDiagonalMoves("forward-left");
+      const forwardRightMoves: ICommonMoveInfoTemplate[] = this.getDiagonalMoves("forward-right");
+      const backwardLeftMoves: ICommonMoveInfoTemplate[] = this.getDiagonalMoves("backward-left");
+      const backwardRightMoves: ICommonMoveInfoTemplate[] = this.getDiagonalMoves("backward-right");
 
       this.diagonalMoves = { forwardLeftMoves, forwardRightMoves, backwardLeftMoves, backwardRightMoves };
 
       return [...forwardLeftMoves, ...forwardRightMoves, ...backwardLeftMoves, ...backwardRightMoves];
    }
 
-   getDiagonalMoves(direction: TDiagonalDirections): TMoveInfo[] {
-      const diagonalMoves: TMoveInfo[] = [];
+   getDiagonalMoves(direction: TDiagonalDirections): ICommonMoveInfoTemplate[] {
+      const diagonalMoves: ICommonMoveInfoTemplate[] = [];
       let stepDelX: number;
       let stepDelY: number;
       let edgeX: number;
@@ -95,16 +95,22 @@ export abstract class DiagonalFigure extends Figure implements IDiagonalFigure {
          delX += stepDelX;
          delY += stepDelY;
          const possibleMove = this.board.getCellByPosition({ x: this.position.x + delX, y: this.position.y + delY });
-         if (possibleMove instanceof Figure) {
-            diagonalMoves.push({
+         const move: ICommonMoveInfoTemplate = {
+            figure: {
+               position: this.position,
+            },
+            info: {
                position: possibleMove.position,
-               info: possibleMove.figureColor !== this.figureColor ? "capture" : "attackWithoutMove",
-               figure: this,
-            });
+            },
+         };
 
+         if (possibleMove instanceof Figure) {
+            move.info.description = possibleMove.figureColor !== this.figureColor ? "capture" : "attackWithoutMove";
+            diagonalMoves.push(move);
             break;
          }
-         diagonalMoves.push({ position: possibleMove.position, figure: this });
+
+         diagonalMoves.push(move);
       }
 
       return diagonalMoves;

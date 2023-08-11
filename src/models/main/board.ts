@@ -7,10 +7,9 @@ import Knight from "../pieces/knight";
 import Pawn from "../pieces/pawn";
 import Queen from "../pieces/queen";
 import Rock from "../pieces/rock";
-import Figure, { EFigures, type TransformationFigure } from "./figure";
+import Figure, { EFigures } from "./figure";
 import { cellPositionToString } from "@/utils/functions";
-import { type TMove } from "@/types/Move";
-import { type TMoveInfo } from "@/types/MoveInfo";
+import { type TMoveInfo, type TMoveInfoWithoutTransformation } from "@/types/MoveInfo";
 
 type Entries<T> = Array<
    {
@@ -29,29 +28,29 @@ interface IFiguresObject {
 
 interface IBoard {
    cells: Cell[][];
-   moves: TMove[];
-   whiteAttackedFields: Map<string, TMoveInfo[]>;
-   blackAttackedFields: Map<string, TMoveInfo[]>;
+   moves: TMoveInfoWithoutTransformation[];
+   whiteAttackedFields: Map<string, TMoveInfoWithoutTransformation[]>;
+   blackAttackedFields: Map<string, TMoveInfoWithoutTransformation[]>;
    currentTurn: EColors;
 
    resetBoard: () => void;
    getCellByPosition: (position: ICellPosition) => Cell;
-   makeMove: (move: TMove, transformationFigure?: TransformationFigure) => void;
+   makeMove: (move: TMoveInfo) => void;
 }
 
 interface IAllMoves {
-   whiteMoves: TMoveInfo[];
-   blackMoves: TMoveInfo[];
+   whiteMoves: TMoveInfoWithoutTransformation[];
+   blackMoves: TMoveInfoWithoutTransformation[];
 }
 
 export default class Board implements IBoard {
    cells: Cell[][] = [];
-   moves: TMove[] = [];
+   moves: TMoveInfoWithoutTransformation[] = [];
    blackFigures: IFiguresObject;
    whiteFigures: IFiguresObject;
    currentTurn: EColors = EColors.white;
-   whiteAttackedFields = new Map<string, TMoveInfo[]>();
-   blackAttackedFields = new Map<string, TMoveInfo[]>();
+   whiteAttackedFields = new Map<string, TMoveInfoWithoutTransformation[]>();
+   blackAttackedFields = new Map<string, TMoveInfoWithoutTransformation[]>();
 
    constructor();
    constructor(board: Board);
@@ -162,26 +161,31 @@ export default class Board implements IBoard {
    private updateFiguresActions(color: EColors): void {
       const isWhite = color === EColors.white;
       const figureObject = isWhite ? this.whiteFigures : this.blackFigures;
-      const attackedFields: Map<string, TMoveInfo[]> = isWhite ? this.whiteAttackedFields : this.blackAttackedFields;
+      const attackedFields: Map<string, TMoveInfoWithoutTransformation[]> = isWhite ? this.whiteAttackedFields : this.blackAttackedFields;
 
       attackedFields.clear();
 
       for (const [key, figuresOrKing] of Object.entries(figureObject) as Entries<IFiguresObject>) {
          if (key === "king") {
-            figuresOrKing.findAllActions();
+            const king = figuresOrKing;
+            king.findAllActions();
+
             for (const possibleAttack of figuresOrKing.possibleAttacks) {
-               const cellPositionString = cellPositionToString(possibleAttack.position);
+               const cellPositionString = cellPositionToString(possibleAttack.info.position);
                const fieldInfo = attackedFields.get(cellPositionString);
                attackedFields.set(cellPositionString, fieldInfo ? [...fieldInfo, possibleAttack] : [possibleAttack]);
             }
+
             continue;
          }
 
-         for (const figure of figuresOrKing) {
+         const figures = figuresOrKing;
+         for (const figure of figures) {
             if (!figure.isAlive) continue;
             figure.findAllActions();
+
             for (const possibleAttack of figure.possibleAttacks) {
-               const cellPositionString = cellPositionToString(possibleAttack.position);
+               const cellPositionString = cellPositionToString(possibleAttack.info.position);
                const fieldInfo = attackedFields.get(cellPositionString);
                attackedFields.set(cellPositionString, fieldInfo ? [...fieldInfo, possibleAttack] : [possibleAttack]);
             }
@@ -189,11 +193,11 @@ export default class Board implements IBoard {
       }
    }
 
-   private updateFiguresPossibleMoves(color: EColors): TMoveInfo[] {
+   private updateFiguresPossibleMoves(color: EColors): TMoveInfoWithoutTransformation[] {
       const isWhite = color === EColors.white;
       const figureObject = isWhite ? this.whiteFigures : this.blackFigures;
 
-      const figuresPossibleMoves: TMoveInfo[] = [];
+      const figuresPossibleMoves: TMoveInfoWithoutTransformation[] = [];
 
       for (const [key, figuresOrKing] of Object.entries(figureObject) as Entries<IFiguresObject>) {
          if (key === "king") {
@@ -212,7 +216,7 @@ export default class Board implements IBoard {
       return figuresPossibleMoves;
    }
 
-   getAttacksOnKing(color: EColors): TMoveInfo[] {
+   getAttacksOnKing(color: EColors): TMoveInfoWithoutTransformation[] {
       const isWhite = color === EColors.white;
       const king = this.getKing(color);
       const attackedFields = isWhite ? this.blackAttackedFields : this.whiteAttackedFields;
@@ -227,89 +231,71 @@ export default class Board implements IBoard {
    resetBoard(): void {
       this.whiteFigures = this.initiateFigures(EColors.white);
       this.blackFigures = this.initiateFigures(EColors.black);
-      this.whiteAttackedFields = new Map<string, TMoveInfo[]>();
-      this.blackAttackedFields = new Map<string, TMoveInfo[]>();
+      this.whiteAttackedFields = new Map<string, TMoveInfoWithoutTransformation[]>();
+      this.blackAttackedFields = new Map<string, TMoveInfoWithoutTransformation[]>();
       this.updateBoard();
       this.updateActions();
    }
 
-   makeMove(move: TMove): void {
-      const isWhite = move.figure.figureColor === EColors.white;
-      const figureObject = isWhite ? this.whiteFigures : this.blackFigures;
-      let figure: Figure | undefined;
-
-      switch (move.figure.constructor) {
-         case Rock:
-            figure = figureObject.rocks.find((rock) => Cell.checkCellsAreTheSame(rock, move.figure));
-            break;
-         case Knight:
-            figure = figureObject.knights.find((knight) => Cell.checkCellsAreTheSame(knight, move.figure));
-            break;
-         case Bishop:
-            figure = figureObject.bishops.find((bishop) => Cell.checkCellsAreTheSame(bishop, move.figure));
-            break;
-         case Queen:
-            figure = figureObject.queens.find((queen) => Cell.checkCellsAreTheSame(queen, move.figure));
-            break;
-         case King:
-            figure = figureObject.king;
-            break;
-         case Pawn:
-            figure = figureObject.pawns.find((pawn) => Cell.checkCellsAreTheSame(pawn, move.figure));
-            break;
-      }
+   makeMove(move: TMoveInfo): void {
+      const isWhite = this.currentTurn === EColors.white;
+      const {
+         info: { position: movePosition },
+         figure: { position: figurePosition },
+      } = move;
+      const figure: Figure = this.getFigureByPosition(figurePosition);
 
       if (!figure) throw "Figure didn't found";
 
-      if (move.info === "capture") {
-         const figureToCapture = this.getCellByPosition(move.position);
+      if (move.info.description === "capture" || move.info.description === "transformation-capture") {
+         const figureToCapture = this.getCellByPosition(movePosition);
          const isNextPositionFigure = figureToCapture instanceof Figure;
          if (!isNextPositionFigure) throw "Next position is not a figure";
          figureToCapture.isAlive = false;
       }
 
-      if (move.info === "enPassant") {
-         const pawnToCapture = this.getCellByPosition(
-            isWhite ? { ...move.position, y: move.position.y - 1 } : { ...move.position, y: move.position.y + 1 }
+      if (move.info.description === "enPassant") {
+         const pawnToCapture = this.getFigureByPosition(
+            isWhite ? { ...movePosition, y: movePosition.y - 1 } : { ...movePosition, y: movePosition.y + 1 }
          );
          const isNextPositionPawn = pawnToCapture instanceof Pawn;
          if (!isNextPositionPawn) throw "Next position is not a pawn";
          pawnToCapture.isAlive = false;
       }
 
-      if (move.transformationFigure) {
+      if (move.info.description === "transformation" || move.info.description === "transformation-capture") {
          const figuresObject = isWhite ? this.whiteFigures : this.blackFigures;
          const figureColor = isWhite ? EColors.white : EColors.black;
 
-         switch (move.transformationFigure) {
+         switch (move.info.transformation) {
             case EFigures.knight:
-               figuresObject.knights.push(new Knight(move.position, figureColor, this));
+               figuresObject.knights.push(new Knight(movePosition, figureColor, this));
                break;
             case EFigures.bishop:
-               figuresObject.bishops.push(new Bishop(move.position, figureColor, this));
+               figuresObject.bishops.push(new Bishop(movePosition, figureColor, this));
                break;
             case EFigures.rock:
-               figuresObject.rocks.push(new Rock(move.position, figureColor, this, true));
+               figuresObject.rocks.push(new Rock(movePosition, figureColor, this, true));
                break;
             case EFigures.queen:
-               figuresObject.queens.push(new Queen(move.position, figureColor, this));
+               figuresObject.queens.push(new Queen(movePosition, figureColor, this));
                break;
          }
 
          figure.isAlive = false;
       }
 
-      if (move.info === "short-castle") {
-         const { rock } = move;
-         rock.position = { y: move.position.y, x: move.position.x - 1 };
+      if (move.info.description === "long-castle" || move.info.description === "short-castle") {
+         const { rockPosition } = move.info;
+         const rock = this.getFigureByPosition(rockPosition);
+         if (move.info.description === "short-castle") {
+            rock.position = { y: movePosition.y, x: movePosition.x - 1 };
+         } else {
+            rock.position = { y: movePosition.y, x: movePosition.x + 1 };
+         }
       }
 
-      if (move.info === "long-castle") {
-         const { rock } = move;
-         rock.position = { y: move.position.y, x: move.position.x + 1 };
-      }
-
-      figure.position = move.position;
+      figure.position = movePosition;
       if (figure.isRock() || figure.isKing()) figure.wereMoved = true;
       this.moves.push(move);
       this.updateBoard();
@@ -321,5 +307,12 @@ export default class Board implements IBoard {
 
    getCellByPosition(position: ICellPosition): Cell {
       return this.cells[position.x][position.y];
+   }
+
+   getFigureByPosition(position: ICellPosition): Figure {
+      const cell = this.getCellByPosition(position);
+      if (cell instanceof Figure) return cell;
+
+      throw "Cell is not a Figure";
    }
 }

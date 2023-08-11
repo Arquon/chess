@@ -1,6 +1,5 @@
 import { EColors } from "@/types/cell/ECellColors";
-import { type TMoveDescription } from "@/types/MoveDescription";
-import { type TMoveInfo } from "@/types/MoveInfo";
+import { type TPawnMoveInfo } from "@/types/moves/PawnMoveInfo";
 
 import Figure, { EFigures, type IFigure } from "../main/figure";
 
@@ -10,15 +9,16 @@ export interface IPawn extends IFigure {
 
 export default class Pawn extends Figure implements IPawn {
    figureName: EFigures.pawn = EFigures.pawn;
+   allActions: TPawnMoveInfo[] = [];
 
-   findPossibleMoves(): TMoveInfo[] {
+   findPossibleMoves(): TPawnMoveInfo[] {
       const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
       if (shieldMoves) {
          return shieldMoves;
       }
 
-      const possibleMoves: TMoveInfo[] = [];
+      const possibleMoves: TPawnMoveInfo[] = [];
 
       switch (protectionDirection) {
          case false:
@@ -29,7 +29,10 @@ export default class Pawn extends Figure implements IPawn {
          case "forward":
          case "backward":
             for (const action of this.allActions) {
-               if (action.position.x === this.position.x) {
+               const {
+                  info: { position: actionPosition },
+               } = action;
+               if (actionPosition.x === this.position.x) {
                   possibleMoves.push(action);
                }
             }
@@ -37,7 +40,10 @@ export default class Pawn extends Figure implements IPawn {
          case "forward-right":
             if (this.figureColor === EColors.white) {
                for (const action of this.allActions) {
-                  if (action.position.x > this.position.x && action.position.y > this.position.y) {
+                  const {
+                     info: { position: actionPosition },
+                  } = action;
+                  if (actionPosition.x > this.position.x && actionPosition.y > this.position.y) {
                      possibleMoves.push(action);
                   }
                }
@@ -46,7 +52,10 @@ export default class Pawn extends Figure implements IPawn {
          case "forward-left":
             if (this.figureColor === EColors.white) {
                for (const action of this.allActions) {
-                  if (action.position.x < this.position.x && action.position.y > this.position.y) {
+                  const {
+                     info: { position: actionPosition },
+                  } = action;
+                  if (actionPosition.x < this.position.x && actionPosition.y > this.position.y) {
                      possibleMoves.push(action);
                   }
                }
@@ -55,7 +64,10 @@ export default class Pawn extends Figure implements IPawn {
          case "backward-right":
             if (this.figureColor === EColors.black) {
                for (const action of this.allActions) {
-                  if (action.position.x > this.position.x && action.position.y < this.position.y) {
+                  const {
+                     info: { position: actionPosition },
+                  } = action;
+                  if (actionPosition.x > this.position.x && actionPosition.y < this.position.y) {
                      possibleMoves.push(action);
                   }
                }
@@ -64,7 +76,10 @@ export default class Pawn extends Figure implements IPawn {
          case "backward-left":
             if (this.figureColor === EColors.black) {
                for (const action of this.allActions) {
-                  if (action.position.x < this.position.x && action.position.y < this.position.y) {
+                  const {
+                     info: { position: actionPosition },
+                  } = action;
+                  if (actionPosition.x < this.position.x && actionPosition.y < this.position.y) {
                      possibleMoves.push(action);
                   }
                }
@@ -77,8 +92,8 @@ export default class Pawn extends Figure implements IPawn {
       return possibleMoves;
    }
 
-   findAllActions(): TMoveInfo[] {
-      const allActions: TMoveInfo[] = [];
+   findAllActions(): TPawnMoveInfo[] {
+      const allActions: TPawnMoveInfo[] = [];
 
       const isCaptureLeftCell = this.checkForAttack("left");
 
@@ -111,20 +126,36 @@ export default class Pawn extends Figure implements IPawn {
       return allActions;
    }
 
-   private checkForNextMove(): TMoveInfo | false {
+   private checkForNextMove(): TPawnMoveInfo | false {
       const isWhite = this.figureColor === EColors.white;
       const delY = isWhite ? 1 : -1;
       const edgeY = isWhite ? 7 : 0;
       const cell = this.board.getCellByPosition({ x: this.position.x, y: this.position.y + delY });
 
       if (!(cell instanceof Figure)) {
-         return { position: cell.position, info: this.position.y + delY === edgeY ? "transformation" : "moveWithoutAttack", figure: this };
+         const move: TPawnMoveInfo = {
+            figure: {
+               type: EFigures.pawn,
+               position: this.position,
+            },
+            info: {
+               position: cell.position,
+            },
+         };
+
+         if (this.position.y + delY === edgeY) {
+            move.info.description = "transformation";
+            return move;
+         }
+
+         move.info.description = "moveWithoutAttack";
+         return move;
       }
 
       return false;
    }
 
-   private checkForLongMove(): TMoveInfo | false {
+   private checkForLongMove(): TPawnMoveInfo | false {
       const startPosition = this.figureColor === EColors.white ? 1 : 6;
       const delY = this.figureColor === EColors.white ? 1 : -1;
 
@@ -133,7 +164,18 @@ export default class Pawn extends Figure implements IPawn {
          if (!(firstCell instanceof Figure)) {
             const secondCell = this.board.getCellByPosition({ x: this.position.x, y: this.position.y + 2 * delY });
             if (!(secondCell instanceof Figure)) {
-               return { position: secondCell.position, info: "moveWithoutAttack", figure: this };
+               const move: TPawnMoveInfo = {
+                  figure: {
+                     type: EFigures.pawn,
+                     position: this.position,
+                  },
+                  info: {
+                     description: "moveWithoutAttack",
+                     position: secondCell.position,
+                  },
+               };
+
+               return move;
             }
          }
       }
@@ -141,7 +183,7 @@ export default class Pawn extends Figure implements IPawn {
       return false;
    }
 
-   private checkForAttack(side: "left" | "right"): TMoveInfo | false {
+   private checkForAttack(side: "left" | "right"): TPawnMoveInfo | false {
       const isWhite = this.figureColor === EColors.white;
       const delY = isWhite ? 1 : -1;
       const delX = side === "left" ? -1 : 1;
@@ -156,42 +198,57 @@ export default class Pawn extends Figure implements IPawn {
       if (this.position.x !== edgeX) {
          const cell = this.board.getCellByPosition({ x: this.position.x + delX, y: this.position.y + delY });
 
-         let moveInfo: TMoveDescription;
-
          const isFigureEnemyExpression = cell instanceof Figure && cell.figureColor !== this.figureColor;
 
-         if (isFigureEnemyExpression) {
-            moveInfo = this.position.y + delY === edgeY ? "transformation-capture" : "capture";
-         } else moveInfo = "attackWithoutMove";
-
-         return {
-            position: cell.position,
-            info: moveInfo,
-            figure: this,
+         const move: TPawnMoveInfo = {
+            figure: {
+               type: EFigures.pawn,
+               position: this.position,
+            },
+            info: {
+               position: cell.position,
+            },
          };
+
+         if (isFigureEnemyExpression) {
+            if (this.position.y + delY === edgeY) move.info.description = "transformation-capture";
+            else move.info.description = "capture";
+         } else move.info.description = "attackWithoutMove";
+
+         return move;
       }
 
       return false;
    }
 
-   private checkForEnPassant(): TMoveInfo | false {
+   private checkForEnPassant(): TPawnMoveInfo | false {
       const lastMove = this.board.moves.at(-1);
       if (!lastMove) return false;
       if (!(lastMove.figure instanceof Pawn)) return false;
 
-      const { position: nextPosition, previousPosition } = lastMove;
+      const {
+         figure: { position: previousPosition },
+         info: { position: nextPosition },
+      } = lastMove;
 
       if (this.position.y !== nextPosition.y) return false;
       if (Math.abs(nextPosition.y - previousPosition.y) !== 2) return false;
       if (Math.abs(this.position.x - nextPosition.x) !== 1) return false;
 
-      return {
-         position: {
-            x: nextPosition.x,
-            y: (nextPosition.y + previousPosition.y) / 2,
+      const move: TPawnMoveInfo = {
+         figure: {
+            type: EFigures.pawn,
+            position: this.position,
          },
-         info: "enPassant",
-         figure: this,
+         info: {
+            description: "enPassant",
+            position: {
+               x: nextPosition.x,
+               y: (nextPosition.y + previousPosition.y) / 2,
+            },
+         },
       };
+
+      return move;
    }
 }

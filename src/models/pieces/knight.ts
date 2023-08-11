@@ -1,4 +1,4 @@
-import { type TMoveInfo } from "@/types/MoveInfo";
+import { type IKnightMoveInfo } from "@/types/moves/CommonMoveInfo";
 import Figure, { EFigures, type IFigure } from "../main/figure";
 
 interface IKnight extends IFigure {
@@ -7,48 +7,61 @@ interface IKnight extends IFigure {
 
 export default class Knight extends Figure implements IKnight {
    figureName: EFigures.knight = EFigures.knight;
+   allActions: IKnightMoveInfo[] = [];
 
-   findPossibleMoves(): TMoveInfo[] {
+   findPossibleMoves(): IKnightMoveInfo[] {
       const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
       if (shieldMoves) {
          return shieldMoves;
       }
 
-      const possibleMoves: TMoveInfo[] = [];
+      const possibleKnightMoves: IKnightMoveInfo[] = [];
 
       if (!protectionDirection) {
          for (const action of this.allActions) {
-            possibleMoves.push(action);
+            possibleKnightMoves.push(action);
          }
       }
 
-      this.possibleMoves = possibleMoves;
-      return this.possibleMoves;
+      this.possibleMoves = possibleKnightMoves;
+      return possibleKnightMoves;
    }
 
-   findAllActions(): TMoveInfo[] {
+   findAllActions(): IKnightMoveInfo[] {
       const {
          position: { x, y },
       } = this;
-      const allMoves: TMoveInfo[] = [];
+      const allMoves: IKnightMoveInfo[] = [];
 
       for (let delX = -2; delX <= 2; delX += 4) {
          for (let delY = -1; delY <= 1; delY += 2) {
             if (x + delX > 7 || x + delX < 0 || y + delY > 7 || y + delY < 0) continue;
 
-            const move = this.board.getCellByPosition({ x: x + delX, y: y + delY });
-            if (!(move instanceof Figure)) {
-               allMoves.push({ position: move.position, figure: this });
+            const possibleMove = this.board.getCellByPosition({ x: x + delX, y: y + delY });
+            const move: IKnightMoveInfo = {
+               figure: {
+                  type: EFigures.knight,
+                  position: this.position,
+               },
+               info: {
+                  position: possibleMove.position,
+               },
+            };
+
+            if (!(possibleMove instanceof Figure)) {
+               allMoves.push(move);
                continue;
             }
 
-            if (Figure.checkIsEnemy(this, move)) {
-               allMoves.push({ position: move.position, info: "capture", figure: this });
+            if (Figure.checkIsEnemy(this, possibleMove)) {
+               move.info.description = "capture";
+               allMoves.push(move);
                continue;
             }
 
-            allMoves.push({ position: move.position, info: "attackWithoutMove", figure: this });
+            move.info.description = "capture";
+            allMoves.push(move);
          }
       }
 
@@ -56,18 +69,30 @@ export default class Knight extends Figure implements IKnight {
          for (let delX = -1; delX <= 1; delX += 2) {
             if (x + delX > 7 || x + delX < 0 || y + delY > 7 || y + delY < 0) continue;
 
-            const move = this.board.getCellByPosition({ x: x + delX, y: y + delY });
-            if (!(move instanceof Figure)) {
-               allMoves.push({ position: move.position, figure: this });
+            const possibleMove = this.board.getCellByPosition({ x: x + delX, y: y + delY });
+            const move: IKnightMoveInfo = {
+               figure: {
+                  type: EFigures.knight,
+                  position: this.position,
+               },
+               info: {
+                  position: possibleMove.position,
+               },
+            };
+
+            if (!(possibleMove instanceof Figure)) {
+               allMoves.push(move);
                continue;
             }
 
-            if (Figure.checkIsEnemy(this, move)) {
-               allMoves.push({ position: move.position, info: "capture", figure: this });
+            if (Figure.checkIsEnemy(this, possibleMove)) {
+               move.info.description = "capture";
+               allMoves.push(move);
                continue;
             }
 
-            allMoves.push({ position: move.position, info: "attackWithoutMove", figure: this });
+            move.info.description = "capture";
+            allMoves.push(move);
          }
       }
 

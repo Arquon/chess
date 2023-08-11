@@ -1,19 +1,19 @@
 import Figure, { type TDirections, type IFigure } from "@/models/main/figure";
-import { type TMoveInfo } from "@/types/MoveInfo";
+import { type ICommonMoveInfoTemplate } from "@/types/moves/CommonMoveInfo";
 
 export type THorizontalDirections = "left" | "right";
 export type TVerticalDirections = "forward" | "backward";
 export type TLinearDirections = THorizontalDirections | TVerticalDirections;
 
 export interface ILinearFigure extends IFigure {
-   findLinearPossibleMoves: (protectionDirection: TDirections | false) => TMoveInfo[];
+   findLinearPossibleMoves: (protectionDirection: TDirections | false) => ICommonMoveInfoTemplate[];
 }
 
 interface ILinearMoves {
-   leftMoves: TMoveInfo[];
-   rightMoves: TMoveInfo[];
-   forwardMoves: TMoveInfo[];
-   backwardMoves: TMoveInfo[];
+   leftMoves: ICommonMoveInfoTemplate[];
+   rightMoves: ICommonMoveInfoTemplate[];
+   forwardMoves: ICommonMoveInfoTemplate[];
+   backwardMoves: ICommonMoveInfoTemplate[];
 }
 export abstract class LinearFigure extends Figure implements ILinearFigure {
    private linearMoves: ILinearMoves = {
@@ -23,10 +23,10 @@ export abstract class LinearFigure extends Figure implements ILinearFigure {
       backwardMoves: [],
    };
 
-   findLinearPossibleMoves(protectionDirection: TDirections | false): TMoveInfo[] {
+   findLinearPossibleMoves(protectionDirection: TDirections | false): ICommonMoveInfoTemplate[] {
       const { leftMoves, rightMoves, forwardMoves, backwardMoves } = this.linearMoves;
 
-      let possibleMoves: TMoveInfo[] = [];
+      let possibleMoves: ICommonMoveInfoTemplate[] = [];
 
       switch (protectionDirection) {
          case false:
@@ -42,15 +42,14 @@ export abstract class LinearFigure extends Figure implements ILinearFigure {
             break;
       }
 
-      this.possibleMoves = possibleMoves;
       return possibleMoves;
    }
 
-   findAllLinearActions(): TMoveInfo[] {
-      const leftMoves: TMoveInfo[] = this.getHorizontalMoves("left");
-      const rightMoves: TMoveInfo[] = this.getHorizontalMoves("right");
-      const forwardMoves: TMoveInfo[] = this.getVerticalMoves("forward");
-      const backwardMoves: TMoveInfo[] = this.getVerticalMoves("backward");
+   findAllLinearActions(): ICommonMoveInfoTemplate[] {
+      const leftMoves: ICommonMoveInfoTemplate[] = this.getHorizontalMoves("left");
+      const rightMoves: ICommonMoveInfoTemplate[] = this.getHorizontalMoves("right");
+      const forwardMoves: ICommonMoveInfoTemplate[] = this.getVerticalMoves("forward");
+      const backwardMoves: ICommonMoveInfoTemplate[] = this.getVerticalMoves("backward");
 
       this.linearMoves = {
          leftMoves,
@@ -62,45 +61,58 @@ export abstract class LinearFigure extends Figure implements ILinearFigure {
       return [...leftMoves, ...rightMoves, ...forwardMoves, ...backwardMoves];
    }
 
-   getHorizontalMoves(side: THorizontalDirections): TMoveInfo[] {
-      const horizontalSideMoves: TMoveInfo[] = [];
+   getHorizontalMoves(side: THorizontalDirections): ICommonMoveInfoTemplate[] {
+      const horizontalSideMoves: ICommonMoveInfoTemplate[] = [];
       const edge = side === "left" ? 0 : 7;
       const stepDelX = side === "left" ? -1 : 1;
       let delX = 0;
       while (this.position.x + delX !== edge) {
          delX += stepDelX;
          const possibleMove = this.board.getCellByPosition({ x: this.position.x + delX, y: this.position.y });
-         if (possibleMove instanceof Figure) {
-            horizontalSideMoves.push({
+         const move: ICommonMoveInfoTemplate = {
+            figure: {
+               position: this.position,
+            },
+            info: {
                position: possibleMove.position,
-               info: possibleMove.figureColor !== this.figureColor ? "capture" : "attackWithoutMove",
-               figure: this,
-            });
+            },
+         };
+
+         if (possibleMove instanceof Figure) {
+            move.info.description = possibleMove.figureColor !== this.figureColor ? "capture" : "attackWithoutMove";
+            horizontalSideMoves.push(move);
             break;
          }
-         horizontalSideMoves.push({ position: possibleMove.position, figure: this });
+
+         horizontalSideMoves.push(move);
       }
 
       return horizontalSideMoves;
    }
 
-   getVerticalMoves(side: TVerticalDirections): TMoveInfo[] {
-      const verticalSideMoves: TMoveInfo[] = [];
+   getVerticalMoves(side: TVerticalDirections): ICommonMoveInfoTemplate[] {
+      const verticalSideMoves: ICommonMoveInfoTemplate[] = [];
       const edge = side === "backward" ? 0 : 7;
       const stepDelY = side === "backward" ? -1 : 1;
       let delY = 0;
       while (this.position.y + delY !== edge) {
          delY += stepDelY;
          const possibleMove = this.board.getCellByPosition({ x: this.position.x, y: this.position.y + delY });
-         if (possibleMove instanceof Figure) {
-            verticalSideMoves.push({
+         const move: ICommonMoveInfoTemplate = {
+            figure: {
+               position: this.position,
+            },
+            info: {
                position: possibleMove.position,
-               info: possibleMove.figureColor !== this.figureColor ? "capture" : "attackWithoutMove",
-               figure: this,
-            });
+            },
+         };
+
+         if (possibleMove instanceof Figure) {
+            move.info.description = possibleMove.figureColor !== this.figureColor ? "capture" : "attackWithoutMove";
+            verticalSideMoves.push(move);
             break;
          }
-         verticalSideMoves.push({ position: possibleMove.position, figure: this });
+         verticalSideMoves.push(move);
       }
 
       return verticalSideMoves;
