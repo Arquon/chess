@@ -12,8 +12,10 @@
    "license": "ISC",
    "devDependencies": {
       "@pmmmwh/react-refresh-webpack-plugin": "^0.5.10",
+      "@types/dotenv-webpack": "^7.0.4",
       "@types/react": "^18.0.30",
       "@types/react-dom": "^18.0.11",
+      "@types/webpack": "^5.28.2",
       "cross-env": "^7.0.3",
       "css-loader": "^6.7.3",
       "css-minimizer-webpack-plugin": "^5.0.0",
@@ -41,8 +43,9 @@
       "webpack-dev-server": "^4.13.1"
    },
    "dependencies": {
+      "dotenv-webpack": "^8.0.1",
       "react": "^18.2.0",
       "react-dom": "^18.2.0",
-      "dotenv-webpack": "^8.0.1"
+      "ts-node": "^10.9.1"
    }
 }
