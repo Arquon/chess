@@ -15,10 +15,9 @@ import Rock from "@/models/pieces/rock";
 
 interface FigureProps {
    figure: Figure;
-   onFigureClick: (event: React.MouseEvent, figure: Figure) => void;
 }
 
-export const FigureComponent: FC<FigureProps> = ({ figure, onFigureClick }) => {
+export const FigureComponent: FC<FigureProps> = ({ figure }) => {
    let Component: React.ReactNode = null;
 
    if (figure instanceof Pawn) {
@@ -40,9 +39,5 @@ export const FigureComponent: FC<FigureProps> = ({ figure, onFigureClick }) => {
       Component = <KingComponent color={figure.figureColor} />;
    }
 
-   const onFigureClickHandler = (event: React.MouseEvent): void => {
-      onFigureClick(event, figure);
-   };
-
-   return <div onClick={onFigureClickHandler}>{Component}</div>;
+   return <div>{Component}</div>;
 };

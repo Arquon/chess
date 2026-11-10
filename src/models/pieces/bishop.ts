@@ -14,6 +14,7 @@ export default class Bishop extends DiagonalFigure implements IBishop {
       const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
       if (shieldMoves) {
+         this.possibleMoves = shieldMoves;
          return shieldMoves;
       }
 

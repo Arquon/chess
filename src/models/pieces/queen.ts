@@ -20,6 +20,7 @@ class Queen extends Figure implements IQueen {
       const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
       if (shieldMoves) {
+         this.possibleMoves = shieldMoves;
          return shieldMoves;
       }
 

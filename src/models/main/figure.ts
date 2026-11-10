@@ -69,6 +69,10 @@ export default abstract class Figure extends Cell implements IFigure {
    }
 
    protected set possibleMoves(value: Array<TFigureMoveInfo<this>>) {
+      if (this.isKnight() && this.position.x === 5) {
+         console.log({ value });
+      }
+
       this._possibleMoves = value;
    }
 
@@ -258,7 +262,6 @@ export default abstract class Figure extends Cell implements IFigure {
             } = action;
             if (Cell.checkCellsHasSamePosition(actionPosition, attackFigurePosition)) {
                shieldedMoves.push(action);
-               return shieldedMoves;
             }
          }
       }
@@ -297,10 +300,15 @@ export default abstract class Figure extends Cell implements IFigure {
             const {
                info: { position: actionPosition },
             } = action;
+
             if (checkFunc(kingPosition, attackFigurePosition, actionPosition)) {
                shieldedMoves.push(action);
             }
          }
+      }
+
+      if (this.isKnight() && this.position.x === 5) {
+         console.log({ shieldedMoves });
       }
 
       return shieldedMoves;
@@ -310,7 +318,7 @@ export default abstract class Figure extends Cell implements IFigure {
 
    abstract findPossibleMoves(): TMoveInfoWithoutTransformation[];
 
-   bindBoard(board: Board): void {
+   bindBoard(board: Board) {
       this.board = board;
    }
 

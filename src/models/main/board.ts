@@ -33,7 +33,6 @@ interface IBoard {
    blackAttackedFields: Map<string, TMoveInfoWithoutTransformation[]>;
    currentTurn: EColors;
 
-   resetBoard: () => void;
    getCellByPosition: (position: ICellPosition) => Cell;
    makeMove: (move: TMoveInfo) => void;
 }
@@ -52,37 +51,11 @@ export default class Board implements IBoard {
    whiteAttackedFields = new Map<string, TMoveInfoWithoutTransformation[]>();
    blackAttackedFields = new Map<string, TMoveInfoWithoutTransformation[]>();
 
-   constructor();
-   constructor(board: Board);
-   constructor(board?: Board) {
-      if (board) {
-         const { cells, moves, whiteFigures, blackFigures, currentTurn } = board;
-         this.cells = cells;
-         this.moves = moves;
-         Board.reBindBoard(whiteFigures, this);
-         this.whiteFigures = whiteFigures;
-         Board.reBindBoard(blackFigures, this);
-         this.blackFigures = blackFigures;
-         this.currentTurn = currentTurn;
-      } else {
-         this.whiteFigures = this.initiateFigures(EColors.white);
-         this.blackFigures = this.initiateFigures(EColors.black);
-         this.updateBoard();
-         this.updateActions();
-      }
-   }
-
-   static reBindBoard(figureObject: IFiguresObject, board: Board): void {
-      for (const [key, figuresOrKing] of Object.entries(figureObject) as Entries<IFiguresObject>) {
-         if (key === "king") {
-            figuresOrKing.bindBoard(board);
-            continue;
-         }
-
-         for (const figure of figuresOrKing) {
-            figure.bindBoard(board);
-         }
-      }
+   constructor() {
+      this.whiteFigures = this.initiateFigures(EColors.white);
+      this.blackFigures = this.initiateFigures(EColors.black);
+      this.updateBoard();
+      this.updateActions();
    }
 
    private initiateFigures(figureColor: EColors): IFiguresObject {
@@ -115,7 +88,7 @@ export default class Board implements IBoard {
       return figuresObject;
    }
 
-   private updateBoard(): void {
+   private updateBoard() {
       for (let x = 0; x < 8; x += 1) {
          this.cells[x] = [];
          for (let y = 0; y < 8; y += 1) {
@@ -158,7 +131,7 @@ export default class Board implements IBoard {
       };
    }
 
-   private updateFiguresActions(color: EColors): void {
+   private updateFiguresActions(color: EColors) {
       const isWhite = color === EColors.white;
       const figureObject = isWhite ? this.whiteFigures : this.blackFigures;
       const attackedFields: Map<string, TMoveInfoWithoutTransformation[]> = isWhite ? this.whiteAttackedFields : this.blackAttackedFields;
@@ -228,29 +201,18 @@ export default class Board implements IBoard {
       return isWhite ? this.whiteFigures.king : this.blackFigures.king;
    }
 
-   resetBoard(): void {
-      this.whiteFigures = this.initiateFigures(EColors.white);
-      this.blackFigures = this.initiateFigures(EColors.black);
-      this.whiteAttackedFields = new Map<string, TMoveInfoWithoutTransformation[]>();
-      this.blackAttackedFields = new Map<string, TMoveInfoWithoutTransformation[]>();
-      this.updateBoard();
-      this.updateActions();
-   }
-
-   makeMove(move: TMoveInfo): void {
+   makeMove(move: TMoveInfo) {
       const isWhite = this.currentTurn === EColors.white;
       const {
          info: { position: movePosition },
          figure: { position: figurePosition },
       } = move;
-      const figure: Figure = this.getFigureByPosition(figurePosition);
-
-      if (!figure) throw "Figure didn't found";
+      const figure = this.getFigureByPosition(figurePosition);
 
       if (move.info.description === "capture" || move.info.description === "transformation-capture") {
          const figureToCapture = this.getCellByPosition(movePosition);
          const isNextPositionFigure = figureToCapture instanceof Figure;
-         if (!isNextPositionFigure) throw "Next position is not a figure";
+         if (!isNextPositionFigure) throw new Error("Next position is not a figure");
          figureToCapture.isAlive = false;
       }
 
@@ -259,7 +221,7 @@ export default class Board implements IBoard {
             isWhite ? { ...movePosition, y: movePosition.y - 1 } : { ...movePosition, y: movePosition.y + 1 }
          );
          const isNextPositionPawn = pawnToCapture instanceof Pawn;
-         if (!isNextPositionPawn) throw "Next position is not a pawn";
+         if (!isNextPositionPawn) throw new Error("Next position is not a pawn");
          pawnToCapture.isAlive = false;
       }
 
@@ -313,6 +275,6 @@ export default class Board implements IBoard {
       const cell = this.getCellByPosition(position);
       if (cell instanceof Figure) return cell;
 
-      throw "Cell is not a Figure";
+      throw new Error("Cell is not a Figure");
    }
 }

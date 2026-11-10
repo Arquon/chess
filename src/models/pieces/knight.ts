@@ -1,5 +1,6 @@
 import { type IKnightMoveInfo } from "@/types/moves/CommonMoveInfo";
 import Figure, { EFigures, type IFigure } from "../main/figure";
+import { type ICellPosition } from "@/types/cell/TCellNumbers";
 
 interface IKnight extends IFigure {
    figureName: EFigures.knight;
@@ -13,6 +14,7 @@ export default class Knight extends Figure implements IKnight {
       const { shieldMoves, protectionDirection } = this.getProtectionDirectionAndShieldMoves();
 
       if (shieldMoves) {
+         this.possibleMoves = shieldMoves;
          return shieldMoves;
       }
 
@@ -34,70 +36,51 @@ export default class Knight extends Figure implements IKnight {
       } = this;
       const allMoves: IKnightMoveInfo[] = [];
 
-      for (let delX = -2; delX <= 2; delX += 4) {
-         for (let delY = -1; delY <= 1; delY += 2) {
-            if (x + delX > 7 || x + delX < 0 || y + delY > 7 || y + delY < 0) continue;
+      const knightMoves = [
+         { delX: -2, delY: -1 },
+         { delX: -2, delY: 1 },
+         { delX: 2, delY: -1 },
+         { delX: 2, delY: 1 },
+         { delX: -1, delY: -2 },
+         { delX: -1, delY: 2 },
+         { delX: 1, delY: -2 },
+         { delX: 1, delY: 2 },
+      ];
 
-            const possibleMove = this.board.getCellByPosition({ x: x + delX, y: y + delY });
-            const move: IKnightMoveInfo = {
-               figure: {
-                  type: EFigures.knight,
-                  position: this.position,
-               },
-               info: {
-                  position: possibleMove.position,
-               },
-            };
+      for (const { delX, delY } of knightMoves) {
+         if (x + delX > 7 || x + delX < 0 || y + delY > 7 || y + delY < 0) continue;
 
-            if (!(possibleMove instanceof Figure)) {
-               allMoves.push(move);
-               continue;
-            }
-
-            if (Figure.checkIsEnemy(this, possibleMove)) {
-               move.info.description = "capture";
-               allMoves.push(move);
-               continue;
-            }
-
-            move.info.description = "capture";
-            allMoves.push(move);
-         }
-      }
-
-      for (let delY = -2; delY <= 2; delY += 4) {
-         for (let delX = -1; delX <= 1; delX += 2) {
-            if (x + delX > 7 || x + delX < 0 || y + delY > 7 || y + delY < 0) continue;
-
-            const possibleMove = this.board.getCellByPosition({ x: x + delX, y: y + delY });
-            const move: IKnightMoveInfo = {
-               figure: {
-                  type: EFigures.knight,
-                  position: this.position,
-               },
-               info: {
-                  position: possibleMove.position,
-               },
-            };
-
-            if (!(possibleMove instanceof Figure)) {
-               allMoves.push(move);
-               continue;
-            }
-
-            if (Figure.checkIsEnemy(this, possibleMove)) {
-               move.info.description = "capture";
-               allMoves.push(move);
-               continue;
-            }
-
-            move.info.description = "capture";
-            allMoves.push(move);
-         }
+         const move = this.getMoveInfo({ x: x + delX, y: y + delY });
+         allMoves.push(move);
       }
 
       this.allActions = allMoves;
 
       return allMoves;
+   }
+
+   private getMoveInfo({ x, y }: ICellPosition): IKnightMoveInfo {
+      const possibleMove = this.board.getCellByPosition({ x, y });
+      const move: IKnightMoveInfo = {
+         figure: {
+            type: EFigures.knight,
+            position: this.position,
+         },
+         info: {
+            position: possibleMove.position,
+         },
+      };
+
+      if (!(possibleMove instanceof Figure)) {
+         return move;
+      }
+
+      if (Figure.checkIsEnemy(this, possibleMove)) {
+         move.info.description = "capture";
+         return move;
+      }
+
+      move.info.description = "attackWithoutMove";
+      return move;
    }
 }

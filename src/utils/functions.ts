@@ -1,6 +1,6 @@
 import { type ICellPosition } from "@/types/cell/TCellNumbers";
 
-export function applyMixins(derivedCtor: any, constructors: any[]): void {
+export function applyMixins(derivedCtor: any, constructors: any[]) {
    constructors.forEach((baseCtor) => {
       Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
          if (name !== "constructor")

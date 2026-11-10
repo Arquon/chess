@@ -36,6 +36,10 @@ export default class King extends Figure implements IKing {
             } = attack;
             const attackFigure = this.board.getFigureByPosition(figurePosition);
 
+            if (Cell.checkCellsHasSamePosition(attackFigure.position, movePosition)) {
+               break;
+            }
+
             if (attackFigure.isDiagonalFigure() && Cell.checkIfCellsOnTheSameDiagonal(attackFigure.position, movePosition, this.position)) {
                skipAction = true;
                break;
@@ -143,6 +147,9 @@ export default class King extends Figure implements IKing {
       for (const rock of rocks) {
          const { position: rockPosition } = rock;
          if (rockPosition.x === 0) {
+            const possibleFigure = this.board.getCellByPosition({ x: 1, y: rockPosition.y });
+            if (possibleFigure instanceof Figure) return false;
+
             for (let i = 2; i <= 3; i++) {
                const possibleFigure = this.board.getCellByPosition({ x: i, y: rockPosition.y });
                if (possibleFigure instanceof Figure) return false;

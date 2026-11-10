@@ -1,6 +1,6 @@
 import { EColors } from "@/types/cell/ECellColors";
 import { getClassNameFromArray } from "@/utils/functions";
-import React, { type FC } from "react";
+import React, { type ReactNode } from "react";
 import { FigureComponent } from "../Figure/Figure";
 import type Cell from "@/models/main/cell";
 import Figure from "@/models/main/figure";
@@ -10,11 +10,11 @@ interface CellProps {
    cellColor: EColors;
    isSelected: boolean;
    isSelectedFigure: boolean;
-   onCellClick: (event: React.MouseEvent, cell: Cell) => void;
-   onFigureClick: (event: React.MouseEvent, figure: Figure) => void;
+   onCellClick: (cell: Cell) => void;
+   selectCurrentFigure: (figure: Figure) => void;
 }
 
-export const CellComponent: FC<CellProps> = ({ cell, cellColor, isSelected, isSelectedFigure, onFigureClick, onCellClick }) => {
+export const CellComponent = ({ cell, cellColor, isSelected, isSelectedFigure, selectCurrentFigure, onCellClick }: CellProps) => {
    const classes = ["cell"];
    if (cellColor === EColors.white) {
       classes.push("cell_white");
@@ -23,15 +23,19 @@ export const CellComponent: FC<CellProps> = ({ cell, cellColor, isSelected, isSe
    if (isSelected) classes.push("cell_selected");
    if (isSelectedFigure) classes.push("cell_selected_figured");
 
-   let figureComponent: React.ReactNode = null;
+   let figureComponent: ReactNode = null;
 
    if (cell instanceof Figure) {
       classes.push("cell_figured");
-      figureComponent = <FigureComponent figure={cell} onFigureClick={onFigureClick} />;
+      figureComponent = <FigureComponent figure={cell} />;
    }
 
+   const onClickHandler = () => {
+      onCellClick(cell);
+   };
+
    return (
-      <div className={getClassNameFromArray(classes)} onClick={(event) => onCellClick(event, cell)}>
+      <div className={getClassNameFromArray(classes)} onClick={onClickHandler}>
          {figureComponent}
       </div>
    );

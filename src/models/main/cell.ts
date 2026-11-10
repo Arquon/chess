@@ -20,6 +20,9 @@ export default class Cell implements ICell {
    }
 
    static checkIfCellOnDiagonalBetweenTwoPoints(firstPoint: ICellPosition, secondPoint: ICellPosition, cell: ICellPosition): boolean {
+      const isDiagonal = Math.abs(secondPoint.x - firstPoint.x) === Math.abs(secondPoint.y - firstPoint.y);
+      if (!isDiagonal) return false;
+
       const maxX = Math.max(firstPoint.x, secondPoint.x);
       const minX = Math.min(firstPoint.x, secondPoint.x);
       const maxY = Math.max(firstPoint.y, secondPoint.y);
@@ -27,17 +30,14 @@ export default class Cell implements ICell {
 
       const isCellInRectangle = minX <= cell.x && cell.x <= maxX && minY <= cell.y && cell.y <= maxY;
 
-      return (
-         isCellInRectangle && (cell.x - firstPoint.x) * (secondPoint.y - firstPoint.y) === (cell.y - firstPoint.y) * (secondPoint.x - firstPoint.x)
-      );
+      return isCellInRectangle && Math.abs(cell.x - firstPoint.x) === Math.abs(cell.y - firstPoint.y);
    }
 
    static checkIfCellsOnTheSameDiagonal(firstPoint: ICellPosition, secondPoint: ICellPosition, thirdPoint: ICellPosition): boolean {
-      const k: number = (firstPoint.y - secondPoint.y) / (firstPoint.x - secondPoint.x);
-      if (Math.abs(k) !== 1) return false;
-      const b: number = firstPoint.y - k * firstPoint.x;
-      const test: number = k * thirdPoint.x + b;
-      return test === thirdPoint.y;
+      const isDiagonal = Math.abs(secondPoint.x - firstPoint.x) === Math.abs(secondPoint.y - firstPoint.y);
+      if (!isDiagonal) return false;
+
+      return Math.abs(thirdPoint.x - firstPoint.x) === Math.abs(thirdPoint.y - firstPoint.y);
    }
 
    static checkIfCellsOnTheSameHorizontal(firstPoint: ICellPosition, secondPoint: ICellPosition, thirdPoint: ICellPosition): boolean {
@@ -46,12 +46,6 @@ export default class Cell implements ICell {
 
    static checkIfCellsOnTheSameVertical(firstPoint: ICellPosition, secondPoint: ICellPosition, thirdPoint: ICellPosition): boolean {
       return firstPoint.x === secondPoint.x && secondPoint.x === thirdPoint.x;
-   }
-
-   static checkIfCellsOnLine(firstPoint: ICellPosition, secondPoint: ICellPosition, thirdPoint: ICellPosition): boolean {
-      if (firstPoint.x === secondPoint.x) return Cell.checkIfCellsOnTheSameHorizontal(firstPoint, secondPoint, thirdPoint);
-      if (firstPoint.y === secondPoint.y) return Cell.checkIfCellsOnTheSameVertical(firstPoint, secondPoint, thirdPoint);
-      return false;
    }
 
    static checkIfCellOnLineBetweenTwoPoints(firstPoint: ICellPosition, secondPoint: ICellPosition, cell: ICellPosition): boolean {
